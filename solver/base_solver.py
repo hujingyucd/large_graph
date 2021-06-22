@@ -9,6 +9,7 @@ class BaseSolver(ABC):
         --<__init__>: initilize the class,
         --<eval>: Given the solutions, output the algorithm's performance
         --<solve>: Given the input data and algorithms, output the solutions
+        --<metric>: Given the solutions, compute the performance metrics
     """
     def __init__(self):
         return
@@ -21,19 +22,19 @@ class BaseSolver(ABC):
     """
         return
 
-    @abstractmethod
+
     def metric(self):
     """
-        For MIS Problem:
+        TODO:For MIS Problem:
             Given the solutions, compute the evaluate result.(the size of the IS/the size of the graph)
     """
 
         return
 
-    @abstractmethod
+
     def eval(self, dataset : Dataset):
     """
-        For MIS Problem:
+        TODO:For MIS Problem:
             Given the input data, compute the corresponding solutions and evaluate result
     """
 
