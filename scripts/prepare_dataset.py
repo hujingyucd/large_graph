@@ -1,0 +1,21 @@
+import os
+import sys
+
+import argparse
+import logging
+
+if __name__ == "__main__":
+    logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
+                        level=logging.INFO,
+                        datefmt='%Y-%m-%d %H:%M:%S')
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--root", type=str, default="./data/temp")
+    parser.add_argument("--url", type=str)
+    args = parser.parse_args()
+
+    currentdir = os.path.dirname(os.path.realpath(__file__))
+    parentdir = os.path.dirname(currentdir)
+    sys.path.append(parentdir)
+    from utils.datasets import GraphDataset
+    ds = GraphDataset(root=args.root, url=args.url)
