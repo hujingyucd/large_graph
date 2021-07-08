@@ -53,11 +53,24 @@ class GreedySolver(base_solver.BaseSolver):
         
         # sort by node degree
         a = sorted(graph.items(), key=lambda x:len(x[1]))
-        graph = dict([])
-        for i in range(len(a)):
-            v1, v2 = a[i]
-            graph[v1] = v2
 
-        result = self.greedy(graph)
+
+        ## Rewrite by ED
+        marked = dict([])
+        result = []
+        for node, neighbors in a:
+            if node not in marked:
+                result.append(node)
+                marked[node] = True
+                for neighbor in neighbors:
+                    marked[neighbor] = True
+
+        # graph = dict([])
+        # for i in range(len(a)):
+        #     v1, v2 = a[i]
+        #     graph[v1] = v2
+        #
+        # result = self.greedy(graph)
+
         self.solution = result
         self.metric()

@@ -50,7 +50,25 @@ class RandomSolver(base_solver.BaseSolver):
                 graph[v1].append(v2)
             if(v1 not in graph[v2]):
                 graph[v2].append(v1)
-        
-        result = self.random(graph)
+
+        ## rewrite by ED
+        order = list(range(len(graph.keys())))
+        random.shuffle(order)
+
+        marked = dict([])
+        result = []
+        for node in order:
+            if node not in marked:
+                result.append(node)
+                marked[node] = True
+                for neighbor in graph[node]:
+                    marked[neighbor] = True
+
+                ## early termination
+                if len(marked) == len(graph.keys()):
+                    break
+
+        # result = self.random(graph)
+
         self.solution = result
         self.metric()
