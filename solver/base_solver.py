@@ -9,8 +9,9 @@ import torch
 import networkx as nx
 import matplotlib.pyplot as plt
 
+
 def visualize(h, color, epoch=None, loss=None):
-    plt.figure(figsize=(7,7))
+    plt.figure(figsize=(7, 7))
     plt.xticks([])
     plt.yticks([])
 
@@ -20,12 +21,17 @@ def visualize(h, color, epoch=None, loss=None):
         if epoch is not None and loss is not None:
             plt.xlabel(f'Epoch: {epoch}, Loss: {loss.item():.4f}', fontsize=16)
     else:
-        nx.draw_networkx(h, pos=nx.spring_layout(h, seed=42), with_labels=False,
-                         node_color=color, cmap="Set2")
+        nx.draw_networkx(h,
+                         pos=nx.spring_layout(h, seed=42),
+                         with_labels=False,
+                         node_color=color,
+                         cmap="Set2")
     plt.show()
 
 
 '''======================= Base solver =========================='''
+
+
 class BaseSolver(ABC):
     """This class is an abstract base class(ABC) for Solvers
 
@@ -47,7 +53,6 @@ class BaseSolver(ABC):
         """
         pass
 
-
     def metric(self):
         """
         TODO:For MIS Problem:
@@ -55,20 +60,20 @@ class BaseSolver(ABC):
         """
         print("MIS: ", end="")
         print(self.solution)
-        print("Size of the IS: ",end="")
+        print("Size of the IS: ", end="")
         print(len(self.solution))
-        print(f'Given the solutions, compute the performance metrics:  {len(self.solution) / self.G.num_nodes:.2f}')
-        
-        
+        print(
+            f'Given the solutions, compute the performance metrics:  {len(self.solution) / self.G.num_nodes:.2f}'
+        )
+
         m = torch.zeros([self.G.num_nodes])
         for i in range(self.G.num_nodes):
             if i in self.solution:
-                        m[i] = torch.tensor(1)
+                m[i] = torch.tensor(1)
         G = to_networkx(self.G, to_undirected=True)
         visualize(G, color=m)
 
-
-    def eval(self, dataset : Dataset):
+    def eval(self, dataset: Dataset):
         """
         TODO:For MIS Problem:
             Given the input data, compute the corresponding solutions and evaluate result
@@ -76,7 +81,7 @@ class BaseSolver(ABC):
         # Get the first graph object as input graph.
         data = dataset[0]
         self.G = data
-        
+
         print("The input graph is:")
         print(data)
         print('=============================================================')
@@ -84,12 +89,13 @@ class BaseSolver(ABC):
         print(f'Number of edges: {data.num_edges}')
         print(f'Average node degree: {data.num_edges / data.num_nodes:.2f}')
         print(f'Number of training nodes: {data.train_mask.sum()}')
-        print(f'Training node label rate: {int(data.train_mask.sum()) / data.num_nodes:.2f}')
+        print(
+            f'Training node label rate: {int(data.train_mask.sum()) / data.num_nodes:.2f}'
+        )
         print(f'Contains isolated nodes: {data.contains_isolated_nodes()}')
         print(f'Contains self-loops: {data.contains_self_loops()}')
         print(f'Is undirected: {data.is_undirected()}')
         print()
-        
         '''
         # visualize the input graph
         G = to_networkx(data, to_undirected=True)
@@ -97,4 +103,3 @@ class BaseSolver(ABC):
         visualize(G, color=m)
         '''
         self.solve()
-

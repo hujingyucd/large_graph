@@ -8,7 +8,7 @@ import random
 import base_solver
 import greedy_solver
 import random_solver
-        
+
 if __name__ == "__main__":
     ''' Choose the dataset '''
     dataset = KarateClub()
@@ -33,7 +33,3 @@ if __name__ == "__main__":
         print()
         R = random_solver.RandomSolver()
         R.eval(dataset)
-
-
-
-
