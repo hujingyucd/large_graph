@@ -128,6 +128,11 @@ class GraphDataset(Dataset):
         i = 0
         centers = set([])
         while i < len(self.processed_file_names):
+            target_path = os.path.join(self.processed_dir,
+                                       "data_{}.pt".format(i))
+            if os.path.exists(target_path):
+                logging.info("data_{}.pt exists".format(i))
+                continue
             node_idx = randint(0, graph.num_nodes - 1)
             while node_idx in centers:
                 node_idx = randint(0, graph.num_nodes - 1)
@@ -150,8 +155,7 @@ class GraphDataset(Dataset):
                 "subgraph {}, expected size: {}, node: {}, edge: {}".format(
                     i, expected_size, data.num_nodes, data.num_edges))
 
-            torch.save(
-                data, os.path.join(self.processed_dir, "data_{}.pt".format(i)))
+            torch.save(data, target_path)
             i += 1
 
     def get(self, idx):
