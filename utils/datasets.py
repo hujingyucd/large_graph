@@ -59,7 +59,8 @@ class GraphDataset(Dataset):
     def __init__(self,
                  root,
                  url,
-                 subgraph_num=100,
+                 split="train",
+                 subgraph_num=200,
                  subgraph_size_min=1000,
                  subgraph_size_max=50000,
                  transform=None,
@@ -68,6 +69,7 @@ class GraphDataset(Dataset):
         self.subgraph_size_min = subgraph_size_min
         self.subgraph_size_max = subgraph_size_max
         self.url = url
+        self.split = split
         super(GraphDataset, self).__init__(root, transform, pre_transform)
 
     @property
@@ -77,7 +79,10 @@ class GraphDataset(Dataset):
 
     @property
     def processed_file_names(self):
-        return ['data_{}.pt'.format(i) for i in range(self.subgraph_num)]
+        return [
+            os.path.join(self.split, 'data_{}.pt'.format(i))
+            for i in range(self.subgraph_num)
+        ]
 
     def __len__(self):
         return len(self.processed_file_names)
@@ -121,17 +126,21 @@ class GraphDataset(Dataset):
 
     def process(self):
         logging.info("processing the data...")
+        if not os.path.exists(os.path.join(self.processed_dir, self.split)):
+            os.mkdir(os.path.join(self.processed_dir, self.split))
         graph = torch.load(os.path.join(self.raw_dir, "complete_graph.pt"))
+        graph.num_nodes = graph.num_nodes
         degree = graph.num_edges / graph.num_nodes
         assert degree > 2
 
         i = 0
         centers = set([])
         while i < len(self.processed_file_names):
-            target_path = os.path.join(self.processed_dir,
+            target_path = os.path.join(self.processed_dir, self.split,
                                        "data_{}.pt".format(i))
             if os.path.exists(target_path):
-                logging.info("data_{}.pt exists".format(i))
+                logging.info("{}/data_{}.pt exists".format(self.split, i))
+                i += 1
                 continue
             node_idx = randint(0, graph.num_nodes - 1)
             while node_idx in centers:

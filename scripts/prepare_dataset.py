@@ -18,4 +18,8 @@ if __name__ == "__main__":
     parentdir = os.path.dirname(currentdir)
     sys.path.append(parentdir)
     from utils.datasets import GraphDataset
-    ds = GraphDataset(root=args.root, url=args.url)
+    ds = GraphDataset(root=args.root, url=args.url, split="train")
+    ds = GraphDataset(root=args.root,
+                      url=args.url,
+                      split="test",
+                      subgraph_num=30)
