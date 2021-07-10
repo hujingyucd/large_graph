@@ -35,7 +35,7 @@ class GreedySolver(base_solver.BaseSolver):
 
     def solve(self):
         edge_index = self.G.edge_index
-        #print(edge_index.t())
+        # print(edge_index.t())
         E = edge_index.t().tolist()
 
         graph = dict([])
@@ -55,7 +55,7 @@ class GreedySolver(base_solver.BaseSolver):
         # sort by node degree
         a = sorted(graph.items(), key=lambda x: len(x[1]))
 
-        ## Rewrite by ED
+        # Rewrite by ED
         marked = dict([])
         result = []
         for node, neighbors in a:

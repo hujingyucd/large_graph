@@ -50,7 +50,7 @@ def gen_subgraph(graph, size_min, size_max, node_idx, expected_size):
     node_idx[subset] = torch.arange(subset.size(0), device=row.device)
     edge_index = node_idx[edge_index]
 
-    data = Data(edge_index=edge_index)
+    data = Data(torch.ones(len(subset), 1), edge_index=edge_index)
     data.num_nodes = len(subset)
     return data
 
@@ -58,11 +58,11 @@ def gen_subgraph(graph, size_min, size_max, node_idx, expected_size):
 class GraphDataset(Dataset):
     def __init__(self,
                  root,
-                 url,
+                 url=None,
                  split="train",
                  subgraph_num=200,
                  subgraph_size_min=1000,
-                 subgraph_size_max=50000,
+                 subgraph_size_max=30000,
                  transform=None,
                  pre_transform=None):
         self.subgraph_num = subgraph_num
@@ -83,6 +83,9 @@ class GraphDataset(Dataset):
             os.path.join(self.split, 'data_{}.pt'.format(i))
             for i in range(self.subgraph_num)
         ]
+
+    def len(self):
+        return len(self)
 
     def __len__(self):
         return len(self.processed_file_names)
@@ -169,5 +172,6 @@ class GraphDataset(Dataset):
 
     def get(self, idx):
         data = torch.load(
-            os.path.join(self.processed_dir, 'data_{}.pt'.format(idx)))
+            os.path.join(self.processed_dir, self.split,
+                         'data_{}.pt'.format(idx)))
         return data

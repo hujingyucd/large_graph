@@ -1,7 +1,7 @@
 import torch
 from torch_geometric.nn import GINConv
 import torch.nn as nn
-from network.layers.util import MLP
+from networks.layers.util import MLP
 
 
 class CollConv(nn.Module):

@@ -11,13 +11,13 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=str, default="./data/temp")
-    parser.add_argument("--url", type=str)
+    parser.add_argument("--url", type=str, default="no")
     args = parser.parse_args()
 
     currentdir = os.path.dirname(os.path.realpath(__file__))
     parentdir = os.path.dirname(currentdir)
     sys.path.append(parentdir)
-    from utils.datasets import GraphDataset
+    from solver.ml_core.datasets import GraphDataset
     ds = GraphDataset(root=args.root, url=args.url, split="train")
     ds = GraphDataset(root=args.root,
                       url=args.url,
