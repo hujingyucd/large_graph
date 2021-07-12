@@ -2,7 +2,7 @@ from networks.layers.coll_conv import CollConv
 import torch
 import torch.nn as nn
 from torch.nn import Sequential
-from graph_networks.layers.util import MLP, Linear_trans
+from networks.layers.util import MLP, Linear_trans
 
 
 class PseudoTilinGNN(torch.nn.Module):
