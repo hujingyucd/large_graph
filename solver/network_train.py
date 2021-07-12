@@ -8,7 +8,8 @@ from networks.pseudo_tilingnn import PseudoTilinGNN
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 if __name__ == "__main__":
-    dataset_path = os.path.join('./dataset', f"{env_name}-ring{complete_graph_size}-{number_of_data}")
+    dataset_path = "/research/dept8/fyp21/cwf2101/data/brightkite",
+    model_save_path = "./released_models",
     batch_size = 1
     learning_rate = 1e-3
     training_epoch = 10000
@@ -23,7 +24,7 @@ if __name__ == "__main__":
     #### Optimizer
     optimizer = torch.optim.Adam(network.parameters(), lr=1e-3)
 
-    trainer = Trainer(device, network, data_path=dataset_path)
+    trainer = Trainer(device, network, optimizer=optimizer, data_path=dataset_path, model_save_path = model_save_path)
 
     trainer.train(ml_solver          = None,
                   optimizer          = optimizer,

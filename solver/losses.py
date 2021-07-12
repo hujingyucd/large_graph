@@ -38,18 +38,15 @@ class Losses:
             (avg_align_length_list))
 
     @staticmethod
-    def calculate_unsupervised_loss(probs, node_feature, collide_edge_index, adj_edges_index, adj_edge_features):
+    def calculate_unsupervised_loss(probs, node_feature, collide_edge_index):
         # start time
         start_time = time.time()
         N = probs.shape[0]  # number of nodes
         M = probs.shape[1]  # number of output features
         E_col = collide_edge_index.shape[1] if len(collide_edge_index) > 0 else 0  # to handle corner cases when no collision edge exist
-        E_adj = adj_edges_index.shape[1] if len(adj_edges_index) > 0 else 0
         losses = []
         # weight o
         COLLISION_WEIGHT    = 1/math.log(1+1e-1) # 10.0
-        # weight e
-        ALIGN_LENGTH_WEIGHT = 0.02
         # weight a
         AVG_AREA_WEIGHT     = 1.0
 
@@ -76,31 +73,12 @@ class Losses:
             else:
                 loss_feasibility = 0.0
 
-            ########### edge length loss (Le)
-            if E_adj > 0:
-                adj_edge_lengths = adj_edge_features[:, 1]
-
-                first_index = adj_edges_index[0, :]
-                first_prob = torch.gather(solution_prob, dim=0, index=first_index)
-                second_index = adj_edges_index[1, :]
-                second_prob = torch.gather(solution_prob, dim=0, index=second_index)
-                assert (first_prob * second_prob * adj_edge_lengths >= 0).all() or not (first_prob * second_prob * adj_edge_lengths <= 1).all()
-
-                prob_product = torch.clamp(first_prob * second_prob * adj_edge_lengths, min=eps)
-                loss_per_adjedge = torch.log(prob_product) / math.log(10)
-                loss_per_adjedge = loss_per_adjedge.view(-1)
-                loss_align_length = torch.sum(loss_per_adjedge) / E_adj
-            else:
-                loss_align_length = 0.0
 
             assert loss_feasibility <= 0
             assert loss_ave_area <= 0
-            assert loss_align_length <= 0
 
             loss = (1 - AVG_AREA_WEIGHT     * loss_ave_area   ) * \
-                   (1 - COLLISION_WEIGHT    * loss_feasibility) * \
-                   (1 - ALIGN_LENGTH_WEIGHT * loss_align_length)
-
+                   (1 - COLLISION_WEIGHT    * loss_feasibility) 
             assert loss >= 1.0
 
             losses.append(loss)
