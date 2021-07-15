@@ -80,9 +80,6 @@ class Losses:
                 prob_i * prob_k, min=eps, max=1 - eps)))
 
         loss = La * Lo  
-        losses.append(loss)  
-        losses = losses.detach().cpu().numpy() 
-        min_index = torch.argmin(losses).detach().cpu().numpy()
 
         return loss, La, Lo
 
