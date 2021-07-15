@@ -14,8 +14,8 @@ class Trainer():
         self.device = device
         self.network = network
         self.optimizer = optimizer
-        self.model_save_path = model_save_path,
         self.data_path = data_path
+        self.model_save_path = model_save_path,
         self.training_path = os.path.join(data_path, 'train')
         self.testing_path = os.path.join(data_path, 'test')
 
