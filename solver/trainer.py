@@ -1,4 +1,5 @@
 import os
+import sys
 import torch
 import numpy as np
 from utils.datasets import GraphDataset
@@ -16,8 +17,6 @@ class Trainer():
         self.optimizer = optimizer
         self.data_path = data_path
         self.model_save_path = model_save_path,
-        self.training_path = os.path.join(data_path, 'train')
-        self.testing_path = os.path.join(data_path, 'test')
 
         self.writer = SummaryWriter(log_dir="logs")
 

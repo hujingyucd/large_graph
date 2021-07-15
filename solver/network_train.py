@@ -1,13 +1,17 @@
-
+import sys
 import os
 import torch
 import numpy as np
-from trainer import Trainer
-from networks.pseudo_tilingnn import PseudoTilinGNN
-
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 if __name__ == "__main__":
+    currentdir = os.path.dirname(os.path.realpath(__file__))
+    parentdir = os.path.dirname(currentdir)
+    sys.path[0] = parentdir
+    
+    from solver.trainer import Trainer
+    from networks.pseudo_tilingnn import PseudoTilinGNN
+
     dataset_path = "/research/dept8/fyp21/cwf2101/data/brightkite",
     model_save_path = "./released_models",
     batch_size = 1
