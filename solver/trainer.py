@@ -25,7 +25,7 @@ class Trainer():
         self.min_test_loss = float("inf")
         self.min_test_loss_epoch = 0
 
-        self.load()
+        # self.load()
 
     def load(self):
         target_path = os.path.join(self.model_save_path, "latest.pth")
