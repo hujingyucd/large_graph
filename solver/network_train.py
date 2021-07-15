@@ -1,8 +1,8 @@
 
 import os
-from solver.trainer import Trainer
 import torch
 import numpy as np
+from solver.trainer import Trainer
 from networks.pseudo_tilingnn import PseudoTilinGNN
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -22,7 +22,7 @@ if __name__ == "__main__":
     # ml_solver = ML_Solver(debugger, device, data_env.complete_graph, network, num_prob_maps=1)
 
     #### Optimizer
-    optimizer = torch.optim.Adam(network.parameters(), lr=1e-3)
+    optimizer = torch.optim.Adam(network.parameters(), lr=learning_rate)
 
     trainer = Trainer(device, network, optimizer=optimizer, data_path=dataset_path, model_save_path = model_save_path)
 

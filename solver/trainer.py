@@ -5,6 +5,7 @@ from utils.datasets import GraphDataset
 from torch_geometric.data import DataLoader
 import traceback
 from solver.losses import Losses
+from torch.utils.tensorboard import SummaryWriter
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -17,6 +18,30 @@ class Trainer():
         self.data_path = data_path
         self.training_path = os.path.join(data_path, 'train')
         self.testing_path = os.path.join(data_path, 'test')
+
+        self.writer = SummaryWriter(log_dir="logs")
+
+        self.epoch = 0
+        self.total_train_epoch = 10000
+        self.min_test_loss = float("inf")
+        self.min_test_loss_epoch = 0
+
+        self.load()
+
+    def load(self):
+        target_path = os.path.join(self.model_save_path, "latest.pth")
+        if not os.path.exists(target_path):
+            return
+        data_dict = torch.load(target_path)
+        self.epoch = data_dict["epoch"]
+        self.min_test_loss = data_dict["min_test_loss"]
+        self.min_test_loss_epoch = data_dict["min_test_loss_epoch"]
+        self.network.load_state_dict(
+            os.path.join(self.model_save_path,
+                         "model_{}.pth".format(self.epoch)))
+        self.optimizer.load_state_dict(
+            os.path.join(self.model_save_path,
+                         "optimizer_{}.pth".format(self.epoch)))    
         
 
     def train(self,
@@ -31,9 +56,12 @@ class Trainer():
         loader_train = DataLoader(dataset_train, batch_size=batch_size, shuffle=True)
         loader_test = DataLoader(dataset_test, batch_size=1, shuffle=False)
 
+        self.total_train_epoch = training_epoch
+
         print("Training Start!!!", flush=True)
-        min_test_loss = float("inf")
-        for i in range(training_epoch):
+        while self.epoch < self.total_train_epoch:
+            torch.cuda.empty_cache()
+            i = self.epoch
             self.network.train()
             for batch in loader_train:
                 ## get prediction
@@ -41,9 +69,9 @@ class Trainer():
                 probs = self.network(x = data.x,
                                     col_e_idx = data.edge_index)
                 try:
-                    optimizer.zero_grad()
-                    train_loss, *_ = Losses.calculate_unsupervised_loss(probs, data.x, adj_edges_index=data.edge_index)
-                                                                                    
+                    # optimizer.zero_grad()
+                    train_loss, *_ = Losses.calculate_unsupervised_loss(probs, data.x, data.edge_index)
+                    optimizer.zero_grad()                                                                
                     train_loss.backward()
                     optimizer.step()
                 except:
@@ -52,23 +80,39 @@ class Trainer():
 
             # self.network.train()
             torch.cuda.empty_cache()
-            loss_train, *_ = Losses.cal_avg_loss(self.network, loader_train)
+            loss_train, loss_train_area, loss_train_coll = Losses.cal_avg_loss(self.network, loader_train)
+            self.writer.add_scalar("Loss/train", loss_train, i)
+            self.writer.add_scalar("AreaLoss/train", loss_train_area, i)
+            self.writer.add_scalar("CollisionLoss/train", loss_train_coll, i)
             print(f"epoch {i}: training loss: {loss_train}", flush=True)
-            loss_test, *_  = Losses.cal_avg_loss(self.network, loader_test)
+            
+            loss_test, loss_test_area, loss_test_coll  = Losses.cal_avg_loss(self.network, loader_test)
+            self.writer.add_scalar("Loss/test", loss_test, i)
+            self.writer.add_scalar("AreaLoss/test", loss_test_area, i)
+            self.writer.add_scalar("CollisionLoss/test", loss_test_coll, i)
             print(f"epoch {i}: testing loss: {loss_test}", flush=True)
 
             ############# result debugging #############
-            if (loss_test < min_test_loss or i % save_model_per_epoch == 0):
-                if loss_test < min_test_loss:
-                    min_test_loss = loss_test
+            if (loss_test < self.min_test_loss or i % save_model_per_epoch == 0):
+                if loss_test < self.min_test_loss:
+                    self.min_test_loss = loss_test
+                    self.min_test_loss_epoch = i
                 torch.cuda.empty_cache()
                 ############# network testing #############
                 # self.network.train()
 
-
+                ############# model save #############
                 torch.save(self.network.state_dict(), os.path.join(self.model_save_path, f'model_{i}_{loss_test}.pth'))
                 torch.save(optimizer.state_dict(), os.path.join(self.model_save_path, f'optimizer_{i}_{loss_test}.pth'))
+                data_dict = {
+                    "epoch": i,
+                    "min_test_loss": self.min_test_loss,
+                    "min_test_loss_epoch": self.min_test_loss_epoch
+                }
+                torch.save(data_dict, os.path.join(self.model_save_path, "latest.pth"))
                 print(f"model saved at epoch {i}")
+
+            self.epoch +=1
 
 
         print("Training Done!!!")
