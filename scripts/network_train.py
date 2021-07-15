@@ -1,3 +1,4 @@
+import logging
 import sys
 import os
 import torch
@@ -8,7 +9,7 @@ if __name__ == "__main__":
     currentdir = os.path.dirname(os.path.realpath(__file__))
     parentdir = os.path.dirname(currentdir)
     sys.path[0] = parentdir
-    
+
     from solver.trainer import Trainer
     from networks.pseudo_tilingnn import PseudoTilinGNN
 
@@ -28,10 +29,13 @@ if __name__ == "__main__":
     #### Optimizer
     optimizer = torch.optim.Adam(network.parameters(), lr=learning_rate)
 
-    trainer = Trainer(device, network, optimizer=optimizer, data_path=dataset_path, model_save_path = model_save_path)
+    trainer = Trainer(device, 
+                      network, 
+                      optimizer=optimizer, 
+                      data_path="/research/dept8/fyp21/cwf2101/data/brightkite", 
+                      model_save_path = "./released_models")
 
-    trainer.train(ml_solver          = None,
-                  optimizer          = optimizer,
+    trainer.train(optimizer          = optimizer,
                   batch_size         = batch_size,
                   training_epoch     = training_epoch,
                   save_model_per_epoch = save_model_per_epoch)

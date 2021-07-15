@@ -19,28 +19,25 @@ class Losses:
         # filled_area_list = []
         # avg_align_length_list = []
 
-        for batch in data_set_loader:
-            try:
-                data = batch.to(device)
-                probs = network(x = data.x,
-                                    col_e_idx = data.edge_index)
+        for batch in data_set_loader:  
+            data = batch.to(device)
+            probs = network(x = data.x,
+                                col_e_idx = data.edge_index)
 
-                if probs is None:
-                    continue
-                
-                loss, La, Lo = Losses.calculate_unsupervised_loss(probs, data.x, data.edge_index)
-                area_losses.append(La)
-                collision_losses.append(Lo)
+            if probs is None:
+                continue
+            
+            loss, La, Lo = Losses.calculate_unsupervised_loss(probs, data.x, data.edge_index)
+            area_losses.append(La)
+            collision_losses.append(Lo)
 
-                '''
-                loss, min_index, _ = Losses.calculate_unsupervised_loss(probs, data.x, data.collide_edge_index,
-                                                                        adj_edges_index=data.edge_index,
-                                                                        adj_edge_features=data.edge_features)
+            '''
+            loss, min_index, _ = Losses.calculate_unsupervised_loss(probs, data.x, data.collide_edge_index,
+                                                                    adj_edges_index=data.edge_index,
+                                                                    adj_edge_features=data.edge_features)
 
-                losses.append(loss.detach().cpu().numpy())
-                '''
-            except:
-                print(traceback.format_exc())
+            losses.append(loss.detach().cpu().numpy())
+            '''
         
         area_losses = torch.stack(area_losses)
         collision_losses = torch.stack(collision_losses)

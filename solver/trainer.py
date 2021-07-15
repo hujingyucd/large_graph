@@ -2,11 +2,12 @@ import os
 import sys
 import torch
 import numpy as np
-from utils.datasets import GraphDataset
 from torch_geometric.data import DataLoader
 import traceback
-from solver.losses import Losses
 from torch.utils.tensorboard import SummaryWriter
+
+from utils.datasets import GraphDataset
+from solver.losses import Losses
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -16,7 +17,7 @@ class Trainer():
         self.network = network
         self.optimizer = optimizer
         self.data_path = data_path
-        self.model_save_path = model_save_path,
+        self.model_save_path = model_save_path
 
         self.writer = SummaryWriter(log_dir="logs")
 
@@ -25,7 +26,7 @@ class Trainer():
         self.min_test_loss = float("inf")
         self.min_test_loss_epoch = 0
 
-        # self.load()
+        self.load()
 
     def load(self):
         target_path = os.path.join(self.model_save_path, "latest.pth")
@@ -40,16 +41,16 @@ class Trainer():
                          "model_{}.pth".format(self.epoch)))
         self.optimizer.load_state_dict(
             os.path.join(self.model_save_path,
-                         "optimizer_{}.pth".format(self.epoch)))    
+                         "optimizer_{}.pth".format(self.epoch)))  
         
 
     def train(self,
-              ml_solver,
               optimizer,
               batch_size=32,
               training_epoch=10000,
               save_model_per_epoch=5):
 
+        # print(self.data_path)
         dataset_train = GraphDataset(root=self.data_path, split="train", subgraph_num=200)
         dataset_test = GraphDataset(root=self.data_path, split="test", subgraph_num=30)
         loader_train = DataLoader(dataset_train, batch_size=batch_size, shuffle=True)
@@ -67,15 +68,13 @@ class Trainer():
                 data = batch.to(self.device)
                 probs = self.network(x = data.x,
                                     col_e_idx = data.edge_index)
-                try:
-                    # optimizer.zero_grad()
-                    train_loss, *_ = Losses.calculate_unsupervised_loss(probs, data.x, data.edge_index)
-                    optimizer.zero_grad()                                                                
-                    train_loss.backward()
-                    optimizer.step()
-                except:
-                    print(traceback.format_exc())
-                    continue
+
+                # optimizer.zero_grad()
+                train_loss, *_ = Losses.calculate_unsupervised_loss(probs, data.x, data.edge_index)
+                optimizer.zero_grad()                                                                
+                train_loss.backward()
+                optimizer.step()
+
 
             # self.network.train()
             torch.cuda.empty_cache()
