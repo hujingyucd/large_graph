@@ -10,7 +10,7 @@ from utils.datasets import GraphDataset
 from solver.losses import Losses
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(device);
+
 
 class Trainer():
     def __init__(self, device, network, optimizer, data_path, model_save_path):
@@ -27,6 +27,7 @@ class Trainer():
         self.min_test_loss = float("inf")
         self.min_test_loss_epoch = 0
 
+        print(self.device);
         self.load()
 
     def load(self):
@@ -52,7 +53,7 @@ class Trainer():
               save_model_per_epoch=5):
 
         # print(self.data_path)
-        dataset_train = GraphDataset(root=self.data_path, split="train", subgraph_num=2)
+        dataset_train = GraphDataset(root=self.data_path, split="train", subgraph_num=200)
         dataset_test = GraphDataset(root=self.data_path, split="test", subgraph_num=30)
         loader_train = DataLoader(dataset_train, batch_size=1, shuffle=True)
         loader_test = DataLoader(dataset_test, batch_size=1, shuffle=False)
@@ -78,11 +79,14 @@ class Trainer():
                 ## get prediction
                 data = batch.to(self.device)
                 print(f'Number of graphs in the current batch: {step + 1} / 200')
+                '''
                 print("graph shape:")
-                print(data.x.shape)
+                print(data.x.shape)'''
                 probs = self.network(x = data.x, col_e_idx = data.edge_index)
+                '''
                 print("probs shape:")
                 print(probs.shape)
+                '''
                 
                 # optimizer.zero_grad()
                 train_loss, *_ = Losses.calculate_unsupervised_loss(probs, data.x, data.edge_index)
