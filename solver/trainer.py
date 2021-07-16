@@ -71,10 +71,10 @@ class Trainer():
             torch.cuda.empty_cache()
             i = self.epoch
             self.network.train()
-            for batch in loader_train:
+            for step, batch in enumerate(loader_train):
                 ## get prediction
                 data = batch.to(self.device)
-                print(f'Number of graphs in the current batch: {data.num_graphs}')
+                print(f'Number of graphs in the current batch: {step + 1} / 200')
                 print("graph shape:")
                 print(data.x.shape)
                 probs = self.network(x = data.x, col_e_idx = data.edge_index)
