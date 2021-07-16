@@ -1,3 +1,5 @@
+.DS_Store
+released_models
 logs/
 *.swp
 data/

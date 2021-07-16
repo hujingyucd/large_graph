@@ -23,12 +23,17 @@ class Trainer():
 
         self.network = network
         self.optimizer = optimizer
+        # dataset_train = GraphDataset(root=data_path,
+        #                              split="train",
+        #                              subgraph_num=200)
         dataset_train = GraphDataset(root=data_path,
-                                     split="train",
-                                     subgraph_num=200)
-        dataset_test = GraphDataset(root=data_path,
-                                    split="test",
-                                    subgraph_num=30)
+                                     split="debug",
+                                     subgraph_num=10)
+        # dataset_test = GraphDataset(root=data_path,
+        #                             split="test",
+        #                             subgraph_num=30)
+        dataset_test = dataset_train
+
         self.loader_train = DataLoader(dataset_train,
                                        batch_size=1,
                                        shuffle=True)
@@ -40,6 +45,7 @@ class Trainer():
         self.collision_loss = OverlapLoss(weight=10.0)
 
         self.total_train_epoch = total_train_epoch
+        self.save_model_per_epoch = save_model_per_epoch
         self.writer = SummaryWriter(log_dir="logs")
 
         self.epoch = 0
@@ -49,6 +55,10 @@ class Trainer():
         self.load()
 
     def save(self):
+        try:
+            os.mkdir(self.model_save_path)
+        except FileExistsError:
+            pass
         torch.save(
             self.network.state_dict(),
             os.path.join(self.model_save_path,
@@ -110,10 +120,27 @@ class Trainer():
             data = batch.to(self.device)
             probs = self.network(x=data.x, col_e_idx=data.edge_index)
 
-            train_loss = self.area_loss(probs) * self.collision_loss(
-                probs, data.edge_index)
+            loss_area = self.area_loss(probs)
+            try:
+                assert loss_area >= 1.0
+            except AssertionError:
+                logging.error("area loss: {}, node: {}".format(
+                    loss_area, data.num_nodes))
+                self.save()
+            loss_collision = self.collision_loss(probs, data.edge_index)
+            try:
+                assert loss_collision >= 1.0
+            except AssertionError:
+                logging.error("collision loss: {}, node: {}".format(
+                    loss_collision, data.num_nodes))
+                self.save()
+
+            train_loss = loss_area * loss_collision
+            # train_loss = self.area_loss(probs) * self.collision_loss(
+            #     probs, data.edge_index)
             self.optimizer.zero_grad()
             train_loss.backward()
+            logging.info("{}, loss {:6f}".format(i, train_loss.item()))
             self.optimizer.step()
 
         torch.cuda.empty_cache()

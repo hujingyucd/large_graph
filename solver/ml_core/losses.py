@@ -18,7 +18,9 @@ class AreaLoss(nn.Module):
             # different from tilingnn, to be confirmed
             avg_area = x * areas / torch.sum(areas)
         avg_area = torch.clamp(avg_area, min=self.eps)
-        return 1 - self.weight * torch.log(avg_area)
+        result = 1.0 - self.weight * torch.log(avg_area)
+        # assert 1.0 <= result
+        return result
 
 
 class OverlapLoss(nn.Module):
@@ -33,10 +35,12 @@ class OverlapLoss(nn.Module):
         '''
         x = torch.squeeze(x)
         if len(edge_index) == 0:
-            return 0.0
+            return 1.0
         prob_i = torch.gather(x, dim=0, index=edge_index[0])
         prob_k = torch.gather(x, dim=0, index=edge_index[1])
 
-        return 1 - self.weight * torch.mean(
+        result = 1.0 - self.weight * torch.mean(
             torch.log(1 - torch.clamp(
                 prob_i * prob_k, min=self.eps, max=1 - self.eps)))
+        # assert 1.0 <= result
+        return result
