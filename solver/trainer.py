@@ -53,7 +53,7 @@ class Trainer():
         # print(self.data_path)
         dataset_train = GraphDataset(root=self.data_path, split="train", subgraph_num=200)
         dataset_test = GraphDataset(root=self.data_path, split="test", subgraph_num=30)
-        loader_train = DataLoader(dataset_train, batch_size=batch_size, shuffle=True)
+        loader_train = DataLoader(dataset_train, batch_size=1, shuffle=True)
         loader_test = DataLoader(dataset_test, batch_size=1, shuffle=False)
 
         self.total_train_epoch = training_epoch

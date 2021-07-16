@@ -57,8 +57,8 @@ class Losses:
         N = probs.shape[0]  # number of nodes
         M = probs.shape[1]  # number of output features
         E_col = collide_edge_index.shape[1] if len(collide_edge_index) > 0 else 0  # to handle corner cases when no collision edge exist
-        '''
         losses = []
+        '''
         # weight a
         AVG_AREA_WEIGHT     = 1.0
         # weight o
@@ -118,11 +118,13 @@ class Losses:
 
         losses = torch.stack(losses)
         loss = torch.min(losses)
-        '''
+        
 
         # print(f"unsupverised loss : {loss}, time_used = {time.time() - start_time}")
         # min_index = torch.argmin(losses).detach().cpu().numpy()
         # losses = losses.detach().cpu().numpy()
         # return loss, min_index, losses
+
+        '''
 
    
