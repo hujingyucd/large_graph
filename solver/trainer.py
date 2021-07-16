@@ -56,6 +56,14 @@ class Trainer():
         loader_train = DataLoader(dataset_train, batch_size=1, shuffle=True)
         loader_test = DataLoader(dataset_test, batch_size=1, shuffle=False)
 
+        # test loader_train
+        for step, data in enumerate(loader_train):
+            print(f'Step {step + 1}:')
+            print('=======')
+            print(f'Number of graphs in the current batch: {data.num_graphs}')
+            print(data)
+            print()
+
         self.total_train_epoch = training_epoch
 
         print("Training Start!!!", flush=True)
@@ -66,9 +74,13 @@ class Trainer():
             for batch in loader_train:
                 ## get prediction
                 data = batch.to(self.device)
-                probs = self.network(x = data.x,
-                                    col_e_idx = data.edge_index)
-
+                print(f'Number of graphs in the current batch: {data.num_graphs}')
+                print("graph shape:")
+                print(data.x.shape)
+                probs = self.network(x = data.x, col_e_idx = data.edge_index)
+                print("probs shape:")
+                print(probs.shape)
+                
                 # optimizer.zero_grad()
                 train_loss, *_ = Losses.calculate_unsupervised_loss(probs, data.x, data.edge_index)
                 optimizer.zero_grad()                                                                
