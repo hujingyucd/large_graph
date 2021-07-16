@@ -10,6 +10,7 @@ from utils.datasets import GraphDataset
 from solver.losses import Losses
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(device);
 
 class Trainer():
     def __init__(self, device, network, optimizer, data_path, model_save_path):
@@ -36,12 +37,12 @@ class Trainer():
         self.epoch = data_dict["epoch"]
         self.min_test_loss = data_dict["min_test_loss"]
         self.min_test_loss_epoch = data_dict["min_test_loss_epoch"]
-        self.network.load_state_dict(
+        self.network.load_state_dict(torch.load(
             os.path.join(self.model_save_path,
-                         "model_{}.pth".format(self.epoch)))
-        self.optimizer.load_state_dict(
+                         "model_{}.pth".format(self.epoch))))
+        self.optimizer.load_state_dict(torch.load(
             os.path.join(self.model_save_path,
-                         "optimizer_{}.pth".format(self.epoch)))  
+                         "optimizer_{}.pth".format(self.epoch)))) 
         
 
     def train(self,
@@ -51,18 +52,20 @@ class Trainer():
               save_model_per_epoch=5):
 
         # print(self.data_path)
-        dataset_train = GraphDataset(root=self.data_path, split="train", subgraph_num=200)
+        dataset_train = GraphDataset(root=self.data_path, split="train", subgraph_num=2)
         dataset_test = GraphDataset(root=self.data_path, split="test", subgraph_num=30)
         loader_train = DataLoader(dataset_train, batch_size=1, shuffle=True)
         loader_test = DataLoader(dataset_test, batch_size=1, shuffle=False)
 
         # test loader_train
+        '''
         for step, data in enumerate(loader_train):
             print(f'Step {step + 1}:')
             print('=======')
             print(f'Number of graphs in the current batch: {data.num_graphs}')
             print(data)
             print()
+        '''
 
         self.total_train_epoch = training_epoch
 
@@ -112,6 +115,9 @@ class Trainer():
                 # self.network.train()
 
                 ############# model save #############
+                if not os.path.exists(self.model_save_path):
+                    os.mkdir(self.model_save_path)
+                
                 torch.save(self.network.state_dict(), os.path.join(self.model_save_path, f'model_{i}_{loss_test}.pth'))
                 torch.save(optimizer.state_dict(), os.path.join(self.model_save_path, f'optimizer_{i}_{loss_test}.pth'))
                 data_dict = {
@@ -119,6 +125,10 @@ class Trainer():
                     "min_test_loss": self.min_test_loss,
                     "min_test_loss_epoch": self.min_test_loss_epoch
                 }
+                torch.save(
+                    data_dict,
+                    os.path.join(self.model_save_path,
+                                "datadict_{}.pth".format(i)))
                 torch.save(data_dict, os.path.join(self.model_save_path, "latest.pth"))
                 print(f"model saved at epoch {i}")
 
