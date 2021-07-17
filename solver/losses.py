@@ -11,6 +11,7 @@ class Losses:
     # evaluate loss for a given data set
     @staticmethod
     def cal_avg_loss(network, data_set_loader):
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         network.eval()
         area_losses = []
         collision_losses = []
