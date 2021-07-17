@@ -117,7 +117,7 @@ class Trainer():
             torch.cuda.empty_cache()
             #loss_train, loss_train_area, loss_train_coll = Losses.cal_avg_loss(self.network, loader_train)
             loss_train, loss_train_area, loss_train_coll = self.test_single_epoch(
-            self.loader_train)
+            loader_train)
             self.writer.add_scalar("Loss/train", loss_train, i)
             self.writer.add_scalar("AreaLoss/train", loss_train_area, i)
             self.writer.add_scalar("CollisionLoss/train", loss_train_coll, i)
@@ -126,7 +126,7 @@ class Trainer():
             torch.cuda.empty_cache()
             #loss_test, loss_test_area, loss_test_coll  = Losses.cal_avg_loss(self.network, loader_test)
             loss_test, loss_test_area, loss_test_coll = self.test_single_epoch(
-            self.loader_test)
+            loader_test)
             self.writer.add_scalar("Loss/test", loss_test, i)
             self.writer.add_scalar("AreaLoss/test", loss_test_area, i)
             self.writer.add_scalar("CollisionLoss/test", loss_test_coll, i)
