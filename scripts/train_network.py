@@ -2,8 +2,22 @@ import logging
 import torch
 import sys
 import os
+import random
+import argparse
+import json
 
 if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-c",
+                        "--config",
+                        type=str,
+                        default="./configs/config.json")
+    args = parser.parse_args()
+
+    with open(args.config, "r") as f:
+        config = json.load(f)
+
     currentdir = os.path.dirname(os.path.realpath(__file__))
     parentdir = os.path.dirname(currentdir)
     sys.path[0] = parentdir
@@ -13,19 +27,34 @@ if __name__ == "__main__":
     from networks.pseudo_tilingnn import PseudoTilinGNN as Gnn
 
     logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
-                        level=logging.DEBUG,
+                        level=getattr(logging,
+                                      config["training"]["logging_level"]),
                         datefmt='%Y-%m-%d %H:%M:%S')
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    gnn = Gnn().to(device)
 
-    data_path = "/research/dept8/fyp21/cwf2101/data/brightkite"
+    torch.manual_seed(config["training"]["seed"])
+    random.seed(config["training"]["seed"])
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    gnn = Gnn(network_depth=config["network"]["depth"],
+              network_width=config["network"]["width"],
+              output_dim=config["network"]["output_dim"]).to(device)
+
+    data_path = config["training"]["data_path"]
     dataset_train = GraphDataset(root=data_path, split="debug", subgraph_num=1)
     dataset_test = dataset_train
-    optimizer = torch.optim.Adam(gnn.parameters(), lr=1e-3)
-    trainer = Trainer(gnn,
-                      dataset_train=dataset_train,
-                      dataset_test=dataset_test,
-                      device=device,
-                      model_save_path="./released_models",
-                      optimizer=optimizer)
+
+    optimizer = torch.optim.Adam(gnn.parameters(),
+                                 lr=config["training"]["optimizer"]["lr"])
+
+    trainer = Trainer(
+        gnn,
+        dataset_train=dataset_train,
+        dataset_test=dataset_test,
+        device=device,
+        model_save_path=config["training"]["model_save_path"],
+        optimizer=optimizer,
+        loss_weights=config["training"]["loss"],
+        total_train_epoch=config["training"]["total_train_epoch"],
+        save_model_per_epoch=config["training"]["save_model_per_epoch"])
     trainer.train()

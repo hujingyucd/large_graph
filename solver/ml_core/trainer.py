@@ -1,40 +1,30 @@
 import os
 import logging
 import torch
-# from solver.ml_core.datasets import GraphDataset
 from torch_geometric.data import DataLoader
 from solver.ml_core.losses import AreaLoss, OverlapLoss
 from torch.utils.tensorboard import SummaryWriter
 
 
 class Trainer():
-    def __init__(self,
-                 network,
-                 # data_path,
-                 dataset_train,
-                 dataset_test,
-                 device,
-                 model_save_path,
-                 optimizer,
-                 total_train_epoch=10000,
-                 save_model_per_epoch=5):
+    def __init__(
+            self,
+            network,
+            # data_path,
+            dataset_train,
+            dataset_test,
+            device,
+            model_save_path,
+            optimizer,
+            loss_weights=None,
+            total_train_epoch=10000,
+            save_model_per_epoch=5):
 
         self.device = device
         self.model_save_path = model_save_path
-        # self.data_path = data_path
 
         self.network = network
         self.optimizer = optimizer
-        # dataset_train = GraphDataset(root=data_path,
-        #                              split="train",
-        #                              subgraph_num=200)
-        # dataset_train = GraphDataset(root=data_path,
-        #                              split="debug",
-        #                              subgraph_num=10)
-        # dataset_test = GraphDataset(root=data_path,
-        #                             split="test",
-        #                             subgraph_num=30)
-        # dataset_test = dataset_train
 
         self.loader_train = DataLoader(dataset_train,
                                        batch_size=1,
@@ -43,8 +33,13 @@ class Trainer():
                                       batch_size=1,
                                       shuffle=False)
 
-        self.area_loss = AreaLoss(weight=1.0)
-        self.collision_loss = OverlapLoss(weight=10.0)
+        if loss_weights:
+            self.area_loss = AreaLoss(weight=loss_weights["area_weight"])
+            self.collision_loss = OverlapLoss(
+                weight=loss_weights["collision_weight"])
+        else:
+            self.area_loss = AreaLoss()
+            self.collision_loss = OverlapLoss()
 
         self.total_train_epoch = total_train_epoch
         self.save_model_per_epoch = save_model_per_epoch
@@ -90,12 +85,14 @@ class Trainer():
         self.epoch = data_dict["epoch"]
         self.min_test_loss = data_dict["min_test_loss"]
         self.min_test_loss_epoch = data_dict["min_test_loss_epoch"]
-        self.network.load_state_dict(
-            os.path.join(self.model_save_path,
-                         "model_{}.pth".format(self.epoch)))
-        self.optimizer.load_state_dict(
-            os.path.join(self.model_save_path,
-                         "optimizer_{}.pth".format(self.epoch)))
+
+        net_path = os.path.join(self.model_save_path,
+                                "model_{}.pth".format(self.epoch))
+        self.network.load_state_dict(torch.load(net_path))
+
+        optim_path = os.path.join(self.model_save_path,
+                                  "optimizer_{}.pth".format(self.epoch))
+        self.optimizer.load_state_dict(torch.load(optim_path))
 
     def test_single_epoch(self, loader):
         self.network.eval()
