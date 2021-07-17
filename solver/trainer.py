@@ -30,7 +30,6 @@ class Trainer():
         print(self.device);
         self.load()
 
-
     def load(self):
         target_path = os.path.join(self.model_save_path, "latest.pth")
         if not os.path.exists(target_path):
@@ -46,7 +45,7 @@ class Trainer():
             os.path.join(self.model_save_path,
                          "optimizer_{}.pth".format(self.epoch)))) 
         
-
+        
     def test_single_epoch(self, loader):
         self.network.eval()
         area_losses = []
@@ -54,16 +53,14 @@ class Trainer():
         for batch in loader:
             data = batch.to(self.device)
             probs = self.network(x=data.x, col_e_idx=data.edge_index)
-            loss, La, Lo = Losses.calculate_unsupervised_loss(probs, data.x, data.edge_index)
-            area_losses.append(La)
-            collision_losses.append(Lo)
+            area_losses.append(self.area_loss(probs))
+            collision_losses.append(self.collision_loss(
+                probs, data.edge_index))
         area_losses = torch.stack(area_losses)
         collision_losses = torch.stack(collision_losses)
         losses = area_losses * collision_losses
         return torch.mean(losses), torch.mean(area_losses), torch.mean(
             collision_losses)
-
-
     def train(self,
               optimizer,
               batch_size=32,
@@ -115,18 +112,14 @@ class Trainer():
 
             # self.network.train()
             torch.cuda.empty_cache()
-            #loss_train, loss_train_area, loss_train_coll = Losses.cal_avg_loss(self.network, loader_train)
-            loss_train, loss_train_area, loss_train_coll = self.test_single_epoch(
-            loader_train)
+            loss_train, loss_train_area, loss_train_coll = Losses.cal_avg_loss(self.network, loader_train)
             self.writer.add_scalar("Loss/train", loss_train, i)
             self.writer.add_scalar("AreaLoss/train", loss_train_area, i)
             self.writer.add_scalar("CollisionLoss/train", loss_train_coll, i)
             print(f"epoch {i}: training loss: {loss_train}", flush=True)
             
             torch.cuda.empty_cache()
-            #loss_test, loss_test_area, loss_test_coll  = Losses.cal_avg_loss(self.network, loader_test)
-            loss_test, loss_test_area, loss_test_coll = self.test_single_epoch(
-            loader_test)
+            loss_test, loss_test_area, loss_test_coll  = Losses.cal_avg_loss(self.network, loader_test)
             self.writer.add_scalar("Loss/test", loss_test, i)
             self.writer.add_scalar("AreaLoss/test", loss_test_area, i)
             self.writer.add_scalar("CollisionLoss/test", loss_test_coll, i)
