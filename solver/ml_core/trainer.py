@@ -1,7 +1,7 @@
 import os
 import logging
 import torch
-from solver.ml_core.datasets import GraphDataset
+# from solver.ml_core.datasets import GraphDataset
 from torch_geometric.data import DataLoader
 from solver.ml_core.losses import AreaLoss, OverlapLoss
 from torch.utils.tensorboard import SummaryWriter
@@ -10,7 +10,9 @@ from torch.utils.tensorboard import SummaryWriter
 class Trainer():
     def __init__(self,
                  network,
-                 data_path,
+                 # data_path,
+                 dataset_train,
+                 dataset_test,
                  device,
                  model_save_path,
                  optimizer,
@@ -19,20 +21,20 @@ class Trainer():
 
         self.device = device
         self.model_save_path = model_save_path
-        self.data_path = data_path
+        # self.data_path = data_path
 
         self.network = network
         self.optimizer = optimizer
         # dataset_train = GraphDataset(root=data_path,
         #                              split="train",
         #                              subgraph_num=200)
-        dataset_train = GraphDataset(root=data_path,
-                                     split="debug",
-                                     subgraph_num=10)
+        # dataset_train = GraphDataset(root=data_path,
+        #                              split="debug",
+        #                              subgraph_num=10)
         # dataset_test = GraphDataset(root=data_path,
         #                             split="test",
         #                             subgraph_num=30)
-        dataset_test = dataset_train
+        # dataset_test = dataset_train
 
         self.loader_train = DataLoader(dataset_train,
                                        batch_size=1,
