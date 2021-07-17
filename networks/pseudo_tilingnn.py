@@ -40,7 +40,7 @@ class PseudoTilinGNN(torch.nn.Module):
         self.final_mlp = Sequential(
             MLP(in_dim=sum(self.collision_branch_feature_dims),
                 out_dim=self.network_width,
-                hidden_layer_dims=[256, 128, 64],
+                hidden_layer_dims=[128, 256, 128, 64],
                 activation=torch.nn.LeakyReLU()),
             Linear_trans(self.network_width,
                          output_dim,
@@ -52,7 +52,6 @@ class PseudoTilinGNN(torch.nn.Module):
         # MLP process the raw features
         collision_branch_feature = self.init_node_feature_trans(x)
 
-        torch.cuda.empty_cache()
         # main procedure
         middle_features = [collision_branch_feature]
         for i in range(self.network_depth):
@@ -70,7 +69,6 @@ class PseudoTilinGNN(torch.nn.Module):
         # output layers
         skip_connec_features = torch.cat(middle_features, 1)
 
-        torch.cuda.empty_cache()
         node_features = self.final_mlp(skip_connec_features)
 
         return node_features
