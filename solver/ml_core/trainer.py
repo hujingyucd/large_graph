@@ -160,8 +160,8 @@ class Trainer():
                 self.save()
 
             train_loss = loss_area * loss_collision
-            # train_loss = self.area_loss(probs) * self.collision_loss(
-            #     probs, data.edge_index)
+            train_loss = self.area_loss(probs) * self.collision_loss(
+                probs, data.edge_index)
             self.optimizer.zero_grad()
             train_loss.backward()
             logging.info("{}, loss {:6f}".format(i, train_loss.item()))

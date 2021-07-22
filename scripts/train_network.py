@@ -50,8 +50,8 @@ if __name__ == "__main__":
     # gnn = nn.DataParallel(gnn,device_ids=[0,2,3])
 
     data_path = config["training"]["data_path"]
-    dataset_train = GraphDataset(root=data_path, split="debug", subgraph_num=500)
-    dataset_test = GraphDataset(root=data_path, split="debug", subgraph_num=200)
+    dataset_train = GraphDataset(root=data_path, split="train", subgraph_num=500)
+    dataset_test = GraphDataset(root=data_path, split="test", subgraph_num=200)
 
     optimizer = torch.optim.Adam(gnn.parameters(),
                                  lr=config["training"]["optimizer"]["lr"])
