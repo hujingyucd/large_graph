@@ -1,8 +1,8 @@
-from solver import base_solver
+from solver.MIS.base_solver import BaseSolver 
 '''======================= Greedy solver =========================='''
 
 
-class GreedySolver(base_solver.BaseSolver):
+class GreedySolver(BaseSolver):
     def greedy(self, graph):
         # base cases
         if (len(graph) == 0):

@@ -1,16 +1,23 @@
-from abc import ABC, abstractmethod
-from torch_geometric.data import Dataset
-from torch_geometric.datasets import KarateClub
-from torch_geometric.utils import to_networkx
-import random
+# from abc import ABC, abstractmethod
+# from torch_geometric.data import Dataset
+# from torch_geometric.datasets import KarateClub
+# from torch_geometric.utils import to_networkx
+# import random
+import sys
+import os
 
 # Solvers for MIS problem
-import base_solver
-import greedy_solver
-import random_solver
-from solver.ml_core.datasets import GraphDataset
-
 if __name__ == "__main__":
+
+    currentdir = os.path.dirname(os.path.realpath(__file__))
+    parentdir = os.path.dirname(currentdir)
+    sys.path.append(parentdir)
+
+    # import solver.MIS.base_solver
+    from solver.MIS.greedy_solver import GreedySolver
+    from solver.MIS.random_solver import RandomSolver
+    from solver.ml_core.datasets import GraphDataset
+
     ''' Choose the dataset '''
     data_path = "/data/jingyu/graph/large_graph/data"
     dataset = GraphDataset(root=data_path, split="debug", subgraph_num=1)
@@ -28,10 +35,10 @@ if __name__ == "__main__":
     if flag == 0:
         print("Greedy solver!")
         print()
-        T = greedy_solver.GreedySolver()
+        T = GreedySolver()
         T.eval(dataset)
     else:
         print("Random solver!")
         print()
-        R = random_solver.RandomSolver()
+        R = RandomSolver()
         R.eval(dataset)

@@ -1,9 +1,9 @@
-from solver.MIS import base_solver
+from solver.MIS.base_solver import BaseSolver
 import numpy as np
 '''======================= Greedy solver =========================='''
 
 
-class MLSolver(base_solver.BaseSolver):
+class MLSolver(BaseSolver):
     def greedy(self, graph):
         # base cases
         if (len(graph) == 0):

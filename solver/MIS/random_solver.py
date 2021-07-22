@@ -1,9 +1,9 @@
-import base_solver
+from solver.MIS.base_solver import BaseSolver
 import random
 '''======================= Random solver =========================='''
 
 
-class RandomSolver(base_solver.BaseSolver):
+class RandomSolver(BaseSolver):
     def random(self, graph):
         # Base cases
         if (len(graph) == 0):
@@ -52,7 +52,7 @@ class RandomSolver(base_solver.BaseSolver):
             if (v1 not in graph[v2]):
                 graph[v2].append(v1)
 
-        ## rewrite by ED
+        # rewrite by ED
         order = list(range(len(graph.keys())))
         random.shuffle(order)
 
@@ -65,7 +65,7 @@ class RandomSolver(base_solver.BaseSolver):
                 for neighbor in graph[node]:
                     marked[neighbor] = True
 
-                ## early termination
+                # early termination
                 if len(marked) == len(graph.keys()):
                     break
 
