@@ -44,6 +44,7 @@ class Trainer():
         else:
             self.area_loss = AreaLoss()
             self.collision_loss = OverlapLoss()
+        self.solution_loss = torch.nn.CrossEntropyLoss()
 
         self.total_train_epoch = total_train_epoch
         self.save_model_per_epoch = save_model_per_epoch
@@ -146,29 +147,42 @@ class Trainer():
             except AssertionError:
                 torch.save(probs, "./probs.pt")
                 self.save()
-                sys.exit("probs {}".format(data.idx))
+                sys.exit("probs, data: {}".format(data.idx))
 
             loss_area = self.area_loss(probs)
             try:
                 assert loss_area >= 1.0
             except AssertionError:
-                logging.error("area loss: {}, node: {}".format(
-                    loss_area, data.num_nodes))
+                logging.error("area loss: {}, data: {}".format(
+                    loss_area, data.idx))
                 self.save()
+
             loss_collision = self.collision_loss(probs, data.edge_index)
             try:
                 assert loss_collision >= 1.0
             except AssertionError:
-                logging.error("collision loss: {}, node: {}".format(
-                    loss_collision, data.num_nodes))
+                logging.error("collision loss: {}, data: {}".format(
+                    loss_collision, data.idx))
                 self.save()
 
             train_loss = loss_area * loss_collision
+
+            solution = torch.bernoulli(probs)
+            with torch.no_grad():
+                score = self.area_loss(solution) * self.collision_loss(
+                    solution, data.edge_index)
+            if score < train_loss:
+                loss_solution = self.solution_loss(probs, solution)
+            else:
+                loss_solution = torch.tensor(0.0)
+            train_loss += loss_solution
+
             # train_loss = self.area_loss(probs) * self.collision_loss(
             #     probs, data.edge_index)
             self.optimizer.zero_grad()
             train_loss.backward()
-            logging.info("{}, loss {:6f}".format(i, train_loss.item()))
+            logging.info("{}, loss {:6f}, loss_sol {:6f}".format(
+                i, train_loss.item(), loss_solution.item()))
             self.optimizer.step()
         logging.info("training epoch done\n\n")
 
@@ -182,8 +196,9 @@ class Trainer():
                                self.epoch)
 
         torch.cuda.empty_cache()
-        loss_test, loss_test_area, loss_test_coll = self.test_single_epoch(
-            self.loader_test)
+        with torch.no_grad():
+            loss_test, loss_test_area, loss_test_coll = self.test_single_epoch(
+                self.loader_test)
         self.writer.add_scalar("Loss/test", loss_test, self.epoch)
         self.writer.add_scalar("AreaLoss/test", loss_test_area, self.epoch)
         self.writer.add_scalar("CollisionLoss/test", loss_test_coll,
