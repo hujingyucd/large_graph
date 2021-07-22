@@ -1,4 +1,3 @@
-import logging
 from networks.layers.coll_conv import CollConv
 import torch
 import torch.nn as nn
@@ -39,8 +38,7 @@ class PseudoTilinGNN(torch.nn.Module):
 
         # output layers
         self.final_mlp = Sequential(
-            # MLP(in_dim=sum(self.collision_branch_feature_dims),
-            MLP(in_dim=self.collision_branch_feature_dims[-1],
+            MLP(in_dim=sum(self.collision_branch_feature_dims),
                 out_dim=self.network_width,
                 hidden_layer_dims=[256, 128, 64],
                 activation=torch.nn.LeakyReLU()),
@@ -50,7 +48,6 @@ class PseudoTilinGNN(torch.nn.Module):
                          batch_norm=False))
 
     def forward(self, x, col_e_idx, col_e_features=None):
-        # logging.debug("input network:shape: {}".format(x.shape))
 
         # MLP process the raw features
         collision_branch_feature = self.init_node_feature_trans(x)
@@ -64,19 +61,16 @@ class PseudoTilinGNN(torch.nn.Module):
                                                       col_e_idx)
 
             # residual connection
-            prev_layer_num = i - self.residual_skip_num
-            if prev_layer_num >= 0:
-                collision_branch_feature += middle_features[prev_layer_num]
+            # prev_layer_num = i - self.residual_skip_num
+            # if prev_layer_num >= 0:
+            #     collision_branch_feature += middle_features[prev_layer_num]
 
             middle_features.append(collision_branch_feature)
 
         # output layers
-        # skip_connec_features = torch.cat(middle_features, 1)
-        skip_connec_features = collision_branch_feature
+        skip_connec_features = torch.cat(middle_features, 1)
 
         torch.cuda.empty_cache()
         node_features = self.final_mlp(skip_connec_features)
 
-
         return node_features
-

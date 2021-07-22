@@ -50,7 +50,7 @@ class PseudoTilinGNN(torch.nn.Module):
                          batch_norm=False))
 
     def forward(self, x, col_e_idx, col_e_features=None):
-        # logging.debug("input network:shape: {}".format(x.shape))
+        logging.debug("shape: {}".format(x.shape))
 
         # MLP process the raw features
         collision_branch_feature = self.init_node_feature_trans(x)
@@ -77,6 +77,4 @@ class PseudoTilinGNN(torch.nn.Module):
         torch.cuda.empty_cache()
         node_features = self.final_mlp(skip_connec_features)
 
-
         return node_features
-
