@@ -174,4 +174,5 @@ class GraphDataset(Dataset):
         data = torch.load(
             os.path.join(self.processed_dir, self.split,
                          'data_{}.pt'.format(idx)))
+        data.idx = idx
         return data

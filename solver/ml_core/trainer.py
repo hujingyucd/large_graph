@@ -1,9 +1,12 @@
 import os
+import sys
 import logging
 import torch
 from torch_geometric.data import DataLoader
-from solver.ml_core.losses import AreaLoss, OverlapLoss
 from torch.utils.tensorboard import SummaryWriter
+from solver.ml_core.losses import AreaLoss, OverlapLoss
+from solver.ml_solver import MLSolver
+from solver.MIS.greedy_solver import GreedySolver
 
 
 class Trainer():
@@ -98,8 +101,6 @@ class Trainer():
         self.optimizer.load_state_dict(torch.load(optim_path))
 
     def greedy_based_solution(self, dataset, probs):
-        from solver.ml_solver import MLSolver
-        from solver.greedy_solver import GreedySolver
         print("ml solver:")
         ml_solver = MLSolver()
         ml_solver.eval(dataset, probs)
@@ -140,6 +141,12 @@ class Trainer():
             # get prediction
             data = batch.to(self.device)
             probs = self.network(x=data.x, col_e_idx=data.edge_index)
+            try:
+                assert not torch.any(torch.isnan(probs))
+            except AssertionError:
+                torch.save(probs, "./probs.pt")
+                self.save()
+                sys.exit("probs {}".format(data.idx))
 
             loss_area = self.area_loss(probs)
             try:
@@ -157,8 +164,8 @@ class Trainer():
                 self.save()
 
             train_loss = loss_area * loss_collision
-            train_loss = self.area_loss(probs) * self.collision_loss(
-                probs, data.edge_index)
+            # train_loss = self.area_loss(probs) * self.collision_loss(
+            #     probs, data.edge_index)
             self.optimizer.zero_grad()
             train_loss.backward()
             logging.info("{}, loss {:6f}".format(i, train_loss.item()))
@@ -200,7 +207,7 @@ class Trainer():
             logging.info("model saved at epoch {}".format(i))
 
     def train(self):
-        logging.info("training epoch start")
+        logging.info("training start")
         while self.epoch < self.total_train_epoch:
             self.train_single_epoch()
             self.epoch += 1
