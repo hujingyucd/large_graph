@@ -5,7 +5,6 @@ import os
 import random
 import argparse
 import json
-import sys
 
 if __name__ == "__main__":
 
@@ -44,18 +43,19 @@ if __name__ == "__main__":
     gnn = Gnn(network_depth=config["network"]["depth"],
               network_width=config["network"]["width"],
               output_dim=config["network"]["output_dim"]).to(device)
-    import torch_geometric.nn.data_parallel as data_parallel
+    # import torch_geometric.nn.data_parallel as data_parallel
     # import torch.nn as nn
     # gnn = data_parallel(gnn,device_ids = [0,2,3])
     # gnn = nn.DataParallel(gnn,device_ids=[0,2,3])
 
     data_path = config["training"]["data_path"]
-    dataset_train = GraphDataset(root=data_path, split="train", subgraph_num=500)
+    dataset_train = GraphDataset(root=data_path,
+                                 split="train",
+                                 subgraph_num=500)
     dataset_test = GraphDataset(root=data_path, split="test", subgraph_num=200)
 
     optimizer = torch.optim.Adam(gnn.parameters(),
                                  lr=config["training"]["optimizer"]["lr"])
-
 
     trainer = Trainer(
         gnn,

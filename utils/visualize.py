@@ -11,36 +11,33 @@ def draw_full_graph(g, probs=None, ax=None):
     x: matplotlib axes Subplot object
     """
 
-    green = np.array([0.0,0.1,0.0])
-    red = np.array([1.0,0.0,0.0])
-    blue = np.array([0.0,0.0,1.0])
+    green = np.array([0.0, 0.1, 0.0])
+    red = np.array([1.0, 0.0, 0.0])
+    blue = np.array([0.0, 0.0, 1.0])
 
     node_colors = None
     edge_colors = None
 
     if probs:
         assert len(probs.shape) == 1
-        assert np.all(0.0<=probs<=1.0)
+        assert np.all(0.0 <= probs <= 1.0)
 
         node_colors = [green * prob for prob in probs]
 
-        edge_probs = [probs[i]*probs[j] for i,j in g.edges]
-        edge_colors = [blue + (red - blue)*prob for prob in edge_probs]
+        edge_probs = [probs[i] * probs[j] for i, j in g.edges]
+        edge_colors = [blue + (red - blue) * prob for prob in edge_probs]
 
     pos = None
 
-    nx.draw_networkx(
-        g,
-        with_labels=False,
-        arrows=False,
-        arrowsize=3,
-        node_size=30,
-        pos=pos,
-        edge_color=edge_colors,
-        ax=ax,
-        node_color=node_colors
-    )
-
+    nx.draw_networkx(g,
+                     with_labels=False,
+                     arrows=False,
+                     arrowsize=3,
+                     node_size=30,
+                     pos=pos,
+                     edge_color=edge_colors,
+                     ax=ax,
+                     node_color=node_colors)
 
 
 def draw_sample_graph(data, probs=None, root=0, depth=1, ax=None):
@@ -65,7 +62,6 @@ def draw_sample_graph(data, probs=None, root=0, depth=1, ax=None):
     g = nx.OrderedGraph()
     for i, j in edgelist:
         g.add_edge(i, j)
-
     '''plt.figure(figsize=(30, 14))
     nx.draw_networkx(g)
     plt.savefig('{}.png'.format('FullGraph'))'''
@@ -79,7 +75,7 @@ def draw_sample_graph(data, probs=None, root=0, depth=1, ax=None):
     G = nx.OrderedGraph()
     for i, j in list(edges_traverse):
         G.add_edge(i, j)
-    
+
     # collect remaining edges from full graph
     for i, j in g.edges:
         if (i in nodes) and (j in nodes):
@@ -103,6 +99,12 @@ def draw_sample_graph(data, probs=None, root=0, depth=1, ax=None):
     # circular layout
     '''pos = nx.circular_layout(G)
     pos[0] = np.array([0, 0])'''
-    
-    nx.draw_networkx(G, pos=pos, with_labels=False, edge_color='#d5d6de', node_color=probs_sorted, cmap=plt.cm.Blues, node_size=30)
+
+    nx.draw_networkx(G,
+                     pos=pos,
+                     with_labels=False,
+                     edge_color='#d5d6de',
+                     node_color=probs_sorted,
+                     cmap=plt.cm.Blues,
+                     node_size=30)
     plt.savefig('{}.png'.format('graph'))

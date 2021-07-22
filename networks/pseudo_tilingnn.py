@@ -1,4 +1,4 @@
-import logging
+# import logging
 from networks.layers.coll_conv import CollConv
 import torch
 import torch.nn as nn
@@ -77,6 +77,4 @@ class PseudoTilinGNN(torch.nn.Module):
         torch.cuda.empty_cache()
         node_features = self.final_mlp(skip_connec_features)
 
-
         return node_features
-

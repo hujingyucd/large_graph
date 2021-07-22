@@ -17,7 +17,7 @@ class Trainer():
             model_save_path,
             optimizer,
             loss_weights=None,
-            resume = False,
+            resume=False,
             total_train_epoch=100,
             save_model_per_epoch=5):
 
@@ -51,7 +51,7 @@ class Trainer():
         self.min_test_loss_epoch = 0
         self.resume = resume
 
-        if resume == True:
+        if resume is True:
             self.load()
 
     def save(self):
@@ -97,16 +97,16 @@ class Trainer():
                                   "optimizer_{}.pth".format(self.epoch))
         self.optimizer.load_state_dict(torch.load(optim_path))
 
-    def greedy_based_solution(self,dataset,probs):
+    def greedy_based_solution(self, dataset, probs):
         from solver.ml_solver import MLSolver
         from solver.greedy_solver import GreedySolver
         print("ml solver:")
         ml_solver = MLSolver()
-        ml_solver.eval(dataset,probs)
+        ml_solver.eval(dataset, probs)
         print("\n\n")
         print("greedy solver:")
         greedy_solver = GreedySolver()
-        greedy_solver.eval(dataset,probs)
+        greedy_solver.eval(dataset, probs)
 
         return
 
@@ -120,19 +120,16 @@ class Trainer():
             data = batch.to(self.device)
             probs = self.network(x=data.x, col_e_idx=data.edge_index)
             if self.epoch % 20 == 0 and self.epoch > 0 and j < 10:
-                self.greedy_based_solution(batch,probs.cpu().detach().numpy())
+                self.greedy_based_solution(batch, probs.cpu().detach().numpy())
                 j = j + 1
             area_losses.append(self.area_loss(probs).detach())
-            collision_losses.append(self.collision_loss(
-                probs, data.edge_index).detach())
+            collision_losses.append(
+                self.collision_loss(probs, data.edge_index).detach())
         area_losses = torch.stack(area_losses)
         collision_losses = torch.stack(collision_losses)
         losses = area_losses * collision_losses
         return torch.mean(losses), torch.mean(area_losses), torch.mean(
             collision_losses)
-
-
-
 
     def train_single_epoch(self):
         logging.info("training epoch start")
@@ -168,11 +165,10 @@ class Trainer():
             self.optimizer.step()
         logging.info("training epoch done\n\n")
 
-
         logging.info("testing epoch start")
         torch.cuda.empty_cache()
         loss_train, loss_train_area, loss_train_coll = self.test_single_epoch(
-                self.loader_train)
+            self.loader_train)
         self.writer.add_scalar("Loss/train", loss_train, self.epoch)
         self.writer.add_scalar("AreaLoss/train", loss_train_area, self.epoch)
         self.writer.add_scalar("CollisionLoss/train", loss_train_coll,
@@ -187,12 +183,11 @@ class Trainer():
                                self.epoch)
 
         logging.info("epoch {} testing loss {:.6f}".format(i, loss_test))
-        logging.info("epoch {} testing area loss {:.6f}".format(i, loss_test_area))
-        logging.info("epoch {} testing collision loss {:.6f}".format(i, loss_test_coll))
+        logging.info("epoch {} testing area loss {:.6f}".format(
+            i, loss_test_area))
+        logging.info("epoch {} testing collision loss {:.6f}".format(
+            i, loss_test_coll))
         logging.info("testing epoch end!\n\n")
-
-
-
 
         # result debugging
         if (loss_test < self.min_test_loss

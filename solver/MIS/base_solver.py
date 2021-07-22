@@ -74,7 +74,7 @@ class BaseSolver(ABC):
         # G = to_networkx(self.G, to_undirected=True)
         # visualize(G, color=m)
 
-    def eval(self, dataset: Dataset ,probs = None):
+    def eval(self, dataset: Dataset, probs=None):
         """
         TODO:For MIS Problem:
             Given the input data, compute the corresponding solutions and evaluate result

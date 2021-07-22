@@ -1,4 +1,4 @@
-from solver import base_solver
+from solver.MIS import base_solver
 import numpy as np
 '''======================= Greedy solver =========================='''
 
@@ -54,7 +54,9 @@ class MLSolver(base_solver.BaseSolver):
                 graph[v2].append(v1)
 
         # sort by node degree
-        a = sorted(graph.items(), key=lambda x: np.squeeze(self.probs.T)[x[0]],reverse=True)
+        a = sorted(graph.items(),
+                   key=lambda x: np.squeeze(self.probs.T)[x[0]],
+                   reverse=True)
 
         # Rewrite by ED
         marked = dict([])

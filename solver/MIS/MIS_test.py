@@ -10,7 +10,6 @@ import greedy_solver
 import random_solver
 from solver.ml_core.datasets import GraphDataset
 
-
 if __name__ == "__main__":
     ''' Choose the dataset '''
     data_path = "/data/jingyu/graph/large_graph/data"
