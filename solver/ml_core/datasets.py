@@ -61,7 +61,7 @@ class GraphDataset(Dataset):
                  url=None,
                  split="train",
                  subgraph_num=200,
-                 subgraph_size_min=1000,
+                 subgraph_size_min=6000,
                  subgraph_size_max=30000,
                  transform=None,
                  pre_transform=None):

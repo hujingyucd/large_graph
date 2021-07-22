@@ -22,4 +22,4 @@ if __name__ == "__main__":
     ds = GraphDataset(root=args.root,
                       url=args.url,
                       split="test",
-                      subgraph_num=30)
+                      subgraph_num=2000)

@@ -44,6 +44,7 @@ class BaseSolver(ABC):
     def __init__(self):
         self.G = None
         self.solution = None
+        self.probs = None
 
     @abstractmethod
     def solve(self):
@@ -58,22 +59,22 @@ class BaseSolver(ABC):
         TODO:For MIS Problem:
             Given the solutions, compute the evaluate result.(the size of the IS/the size of the graph)
         """
-        print("MIS: ", end="")
-        print(self.solution)
+        # print("MIS: ", end="")
+        # print(self.solution)
         print("Size of the IS: ", end="")
         print(len(self.solution))
         print(
             f'Given the solutions, compute the performance metrics:  {len(self.solution) / self.G.num_nodes:.2f}'
         )
 
-        m = torch.zeros([self.G.num_nodes])
-        for i in range(self.G.num_nodes):
-            if i in self.solution:
-                m[i] = torch.tensor(1)
-        G = to_networkx(self.G, to_undirected=True)
-        visualize(G, color=m)
+        # m = torch.zeros([self.G.num_nodes])
+        # for i in range(self.G.num_nodes):
+        #     if i in self.solution:
+        #         m[i] = torch.tensor(1)
+        # G = to_networkx(self.G, to_undirected=True)
+        # visualize(G, color=m)
 
-    def eval(self, dataset: Dataset):
+    def eval(self, dataset: Dataset ,probs = None):
         """
         TODO:For MIS Problem:
             Given the input data, compute the corresponding solutions and evaluate result
@@ -81,6 +82,7 @@ class BaseSolver(ABC):
         # Get the first graph object as input graph.
         data = dataset[0]
         self.G = data
+        self.probs = probs
 
         print("The input graph is:")
         print(data)
@@ -88,14 +90,14 @@ class BaseSolver(ABC):
         print(f'Number of nodes: {data.num_nodes}')
         print(f'Number of edges: {data.num_edges}')
         print(f'Average node degree: {data.num_edges / data.num_nodes:.2f}')
-        print(f'Number of training nodes: {data.train_mask.sum()}')
-        print(
-            f'Training node label rate: {int(data.train_mask.sum()) / data.num_nodes:.2f}'
-        )
-        print(f'Contains isolated nodes: {data.contains_isolated_nodes()}')
-        print(f'Contains self-loops: {data.contains_self_loops()}')
-        print(f'Is undirected: {data.is_undirected()}')
-        print()
+        # print(f'Number of training nodes: {data.train_mask.sum()}')
+        # print(
+        #     f'Training node label rate: {int(data.train_mask.sum()) / data.num_nodes:.2f}'
+        # )
+        # print(f'Contains isolated nodes: {data.contains_isolated_nodes()}')
+        # print(f'Contains self-loops: {data.contains_self_loops()}')
+        # print(f'Is undirected: {data.is_undirected()}')
+        # print()
         '''
         # visualize the input graph
         G = to_networkx(data, to_undirected=True)

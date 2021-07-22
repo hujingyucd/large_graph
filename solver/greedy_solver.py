@@ -1,4 +1,4 @@
-import base_solver
+from solver import base_solver
 '''======================= Greedy solver =========================='''
 
 
