@@ -181,8 +181,8 @@ class Trainer():
             #     probs, data.edge_index)
             self.optimizer.zero_grad()
             train_loss.backward()
-            logging.info("{}, loss {:6f}, loss_sol {:6f}".format(
-                i, train_loss.item(), loss_solution.item()))
+            logging.info("{}, loss {:6f}, score {:6f}, loss_sol {:6f}".format(
+                i, train_loss.item(), score, loss_solution.item()))
             self.optimizer.step()
         logging.info("training epoch done\n\n")
 
