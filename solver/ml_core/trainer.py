@@ -188,8 +188,9 @@ class Trainer():
 
         logging.info("testing epoch start")
         torch.cuda.empty_cache()
-        loss_train, loss_train_area, loss_train_coll = self.test_single_epoch(
-            self.loader_train)
+        with torch.no_grad():
+            loss_train, loss_train_area, loss_train_coll = \
+                    self.test_single_epoch(self.loader_train)
         self.writer.add_scalar("Loss/train", loss_train, self.epoch)
         self.writer.add_scalar("AreaLoss/train", loss_train_area, self.epoch)
         self.writer.add_scalar("CollisionLoss/train", loss_train_coll,
