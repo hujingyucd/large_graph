@@ -20,7 +20,7 @@ class Trainer():
             model_save_path,
             optimizer,
             loss_weights=None,
-            resume=False,
+            resume=True,
             total_train_epoch=100,
             save_model_per_epoch=5):
 
