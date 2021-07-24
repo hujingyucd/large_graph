@@ -1,0 +1,376 @@
+commit a0a28f2bda923a6246f60e623705bc1660376df7
+Author: Richard Huan <richard20925@gmail.com>
+Date:   Sat Jul 24 12:51:36 2021 +0800
+
+    New config file
+
+commit dee2ddd7ed6ac2559a732df15faca98f83381cfb
+Author: Richard Huan <richard20925@gmail.com>
+Date:   Sat Jul 24 12:51:16 2021 +0800
+
+    Local changes
+
+commit c33c83f47af063f275d5cce90d0e535bd5637bd4
+Author: Richard Huan <richard20925@gmail.com>
+Date:   Sat Jul 24 12:50:10 2021 +0800
+
+    Modify saved result dir
+
+commit 76721e1cea5aa80e5fed80387f2babb4463ad0e2
+Author: Richard Huan <richard20925@gmail.com>
+Date:   Sat Jul 24 12:41:27 2021 +0800
+
+    Local changes
+
+commit e06a837f2e3117339036e5cb6ac572f14ce81e22
+Author: Richard Huan <richard20925@gmail.com>
+Date:   Sat Jul 24 11:47:46 2021 +0800
+
+    Set resume default to be true
+
+commit ded2eb55598be92dcba289ab89457656cd17b00d
+Author: Richard Huan <richard20925@gmail.com>
+Date:   Sat Jul 24 11:47:20 2021 +0800
+
+    Local changes
+
+commit ec2e130d7a74ce66faf8919d911facd50ba46d9c
+Author: Richard Huan <richard20925@gmail.com>
+Date:   Fri Jul 23 23:22:58 2021 +0800
+
+    Local changes
+
+commit 0d0a9b653e6f5e2a5ccc55ef60d4971dac1fa8a2
+Author: Richard Huan <richard20925@gmail.com>
+Date:   Fri Jul 23 23:22:42 2021 +0800
+
+    Better logging
+
+commit 6fc9c49e8d480f9879c94565ab5e920c3e70b5a5
+Author: Richard Huan <richard20925@gmail.com>
+Date:   Fri Jul 23 22:55:42 2021 +0800
+
+    Local changes
+
+commit df20c00a42d2d20eca3cc4a89dfe956b8900d05d
+Author: Richard Huan <richard20925@gmail.com>
+Date:   Fri Jul 23 22:55:20 2021 +0800
+
+    Use no grad for testing
+
+commit 4a3c2a48e1659460271a91f61a14cbd9c30f5e9b
+Author: Richard Huan <richard20925@gmail.com>
+Date:   Thu Jul 22 23:18:27 2021 +0800
+
+    Add single solution loss
+
+commit dea8244242c88cb1b5b39df13ed88ceb9297878f
+Author: Richard Huan <richard20925@gmail.com>
+Date:   Thu Jul 22 23:12:35 2021 +0800
+
+    Local changes
+
+commit 0c2ba49811154fb43cb19de29c5655d90027f1ed
+Author: Richard Huan <richard20925@gmail.com>
+Date:   Thu Jul 22 20:33:57 2021 +0800
+
+    Enable eval
+
+commit e967f9c70cb9512022c5be348b92ed7803cd565c
+Author: Richard Huan <richard20925@gmail.com>
+Date:   Thu Jul 22 20:32:05 2021 +0800
+
+    For local use
+
+commit e6f85ef6bdd1a222a7799da2d4720dd9eae57b58
+Author: Richard Huan <richard20925@gmail.com>
+Date:   Thu Jul 22 20:29:45 2021 +0800
+
+    Minor changes
+
+commit b3d5446f77ecaceaa2114a2c98619068e60d3b9e
+Author: Richard Huan <richard20925@gmail.com>
+Date:   Thu Jul 22 17:06:09 2021 +0800
+
+    Move script to scripts/
+
+commit 49676e18e7eb7fef67cfc794baa20da0e506b5b5
+Author: Richard Huan <richard20925@gmail.com>
+Date:   Thu Jul 22 16:46:21 2021 +0800
+
+    Prune files; fix import bugs; format code
+
+commit 46d242e3c069e2101b54a265dc135a4e8a292d94
+Author: hujingyucd@qq.com <hujingyu0618>
+Date:   Thu Jul 22 14:08:27 2021 +0800
+
+    1. all JY changes
+
+commit 9caf36007289a3341b1cc24e2ff57ddfba021d26
+Merge: 0b35dc4 9c5eb2b
+Author: hujingyucd@qq.com <hujingyu0618>
+Date:   Thu Jul 22 14:07:22 2021 +0800
+
+    2.fix conflict
+
+commit 0b35dc4e34f53ad87a4f1c9de80846f09119687c
+Merge: c244af2 6d2e173
+Author: hujingyucd@qq.com <hujingyu0618>
+Date:   Thu Jul 22 14:04:18 2021 +0800
+
+    1. fix conflict
+
+commit c244af293b3db7d4ee8d352e4ee107d33ca1335c
+Author: hujingyucd@qq.com <hujingyu0618>
+Date:   Thu Jul 22 13:42:09 2021 +0800
+
+    better than greedy
+
+commit 6d2e1738f2fa574855b57790fb6750904a4744ba
+Author: petershone <515663728@qq.com>
+Date:   Tue Jul 20 03:42:23 2021 +0800
+
+    visualization of a sample graph by BFS
+
+commit b3b0c08f175b8f8737aee546645a4d353895368d
+Author: Richard Huan <richard20925@gmail.com>
+Date:   Sat Jul 17 14:50:00 2021 +0800
+
+    Add config; fix load bug
+
+commit 9c5eb2b3296a57ca1752db645697238bc0b56ebd
+Author: petershone <515663728@qq.com>
+Date:   Sat Jul 17 13:48:19 2021 +0800
+
+    Reverse changes in network
+
+commit 6b169be9818cdc48e08814568abf4df2e3336fc1
+Author: petershone <515663728@qq.com>
+Date:   Sat Jul 17 12:58:23 2021 +0800
+
+    Update network
+
+commit dc72bd9516807b3e4f1a3df69df75a2ee002d6ea
+Author: petershone <515663728@qq.com>
+Date:   Sat Jul 17 12:52:52 2021 +0800
+
+    Update trainer.py
+
+commit d5c99bfdd212b993f2365bfff65574735796858f
+Author: petershone <515663728@qq.com>
+Date:   Sat Jul 17 12:49:35 2021 +0800
+
+    Test loss function
+
+commit a63ef1543563eacd69b8339a866b9a41ff25318d
+Author: petershone <515663728@qq.com>
+Date:   Sat Jul 17 12:30:19 2021 +0800
+
+    Bug fix
+
+commit 190ab7affcc46e3d90f2e30b1b3625e01526a429
+Author: Richard Huan <richard20925@gmail.com>
+Date:   Sat Jul 17 12:00:05 2021 +0800
+
+    Temporary commit
+
+commit d980bf61047470cd8f5d7ae4748e7fa1881e97d7
+Author: petershone <515663728@qq.com>
+Date:   Fri Jul 16 17:02:51 2021 +0800
+
+    Update trainer.py
+
+commit 1e65e5075be95dd8e1ad7586a1e6892e1835c10d
+Author: petershone <515663728@qq.com>
+Date:   Fri Jul 16 16:55:51 2021 +0800
+
+    Update trainer.py
+
+commit 85f64860108082fd1954cad33f802034a68b1b5b
+Author: petershone <515663728@qq.com>
+Date:   Fri Jul 16 11:24:31 2021 +0800
+
+    Update trainer.py
+
+commit 28046f50b3266d4bb2cbf447c065bc3bc5992098
+Author: petershone <515663728@qq.com>
+Date:   Fri Jul 16 11:15:37 2021 +0800
+
+    Add lines for debug
+
+commit 6e0fa6b82fc14c7e0d4d85cf53c1f315e9d009f5
+Author: petershone <515663728@qq.com>
+Date:   Fri Jul 16 09:59:16 2021 +0800
+
+    Modify batch size
+
+commit 251144345d5b3a6c52bda2d77393f80f6955d6af
+Author: Richard Huan <richard20925@gmail.com>
+Date:   Fri Jul 16 08:20:23 2021 +0800
+
+    Temporary commit
+
+commit 32966effdcbc3537d6f72ef9c5c072585e15a3a4
+Author: petershone <515663728@qq.com>
+Date:   Fri Jul 16 04:04:56 2021 +0800
+
+    change loss weight
+
+commit 9fd7fb46820cc0a00c45b868245bde9ea7ef86f8
+Author: petershone <515663728@qq.com>
+Date:   Fri Jul 16 03:11:21 2021 +0800
+
+    Fix loss bug
+
+commit 2b3043323cf54d0b133bffc9b53d2d078bbbc779
+Author: petershone <515663728@qq.com>
+Date:   Fri Jul 16 03:03:33 2021 +0800
+
+    Bug fix
+
+commit ab501c71f7dde4486eb6a84f0ae9d2c6da207dab
+Author: petershone <515663728@qq.com>
+Date:   Thu Jul 15 13:05:03 2021 +0800
+
+    Dataset bug fix
+
+commit 64c958c3272ce59af5786ac6b84f1b5febdfde74
+Author: petershone <515663728@qq.com>
+Date:   Thu Jul 15 12:36:52 2021 +0800
+
+    Router
+
+commit b6ab2919405e1578f01089155dc7405b5219fd7e
+Author: petershone <515663728@qq.com>
+Date:   Thu Jul 15 12:08:14 2021 +0800
+
+    Bug fixed
+
+commit 98fabd87f4b8aa0f0bc3ffdb32deeb7033b4c896
+Author: petershone <515663728@qq.com>
+Date:   Thu Jul 15 11:57:46 2021 +0800
+
+    Loss bug fixed
+
+commit 29c0dbf0c7addb25ef7a277abb3f4035cd6ecc1c
+Author: petershone <515663728@qq.com>
+Date:   Mon Jul 12 13:00:07 2021 +0800
+
+    Bug fixed
+
+commit 6e6e58b5d7ca8a084dfa2aff1ab7808479d65fe1
+Author: petershone <515663728@qq.com>
+Date:   Mon Jul 12 09:42:48 2021 +0800
+
+    Loss
+
+commit da916620533dd7bed22f8b704dcc1cae50e434d0
+Author: Richard Huan <richard20925@gmail.com>
+Date:   Sat Jul 10 09:02:48 2021 +0800
+
+    Add trainer; fix bugs; out of memory to be fixed
+
+commit 72cb1e61f1e1acb1ff052803a030e7f25e39aa52
+Author: Richard Huan <richard20925@gmail.com>
+Date:   Fri Jul 9 15:30:15 2021 +0800
+
+    Fix dataset generation; add split
+
+commit 75a2ff9f63b0e538ea68fe87652a308ac1d4f565
+Author: Richard Huan <richard20925@gmail.com>
+Date:   Fri Jul 9 11:50:22 2021 +0800
+
+    Format some code
+
+commit 8e34bfeecfa842e7044b6bc944a764f9eae6b78a
+Merge: d124dc5 12ca151
+Author: Richard Huan <richard20925@gmail.com>
+Date:   Fri Jul 9 11:49:47 2021 +0800
+
+    Merge branch 'network-dev'
+
+commit d124dc5c8db3164ca86502f58163a00db6995f8e
+Merge: e2f2515 0f32abf
+Author: Richard Huan <richard20925@gmail.com>
+Date:   Fri Jul 9 11:44:17 2021 +0800
+
+    Merge branch 'dataset-dev'
+
+commit 0f32abf8f6fe12396bdd520906e77c429ea97660
+Author: Richard Huan <richard20925@gmail.com>
+Date:   Fri Jul 9 11:44:00 2021 +0800
+
+    Modify dataset generation
+
+commit 12ca151cbc807d05dd51b69fd7105d48bed9bf37
+Author: Richard Huan <richard20925@gmail.com>
+Date:   Fri Jul 9 11:23:26 2021 +0800
+
+    Add pseudo tilin gnn
+
+commit e2f2515456f7e3e4a53a63a816e3f09388aeda21
+Author: edward1997104 <edward1997104@link.cuhk.edu.hk>
+Date:   Thu Jul 8 15:15:50 2021 +0800
+
+    1. commit optimized version of the greedy and random
+
+commit 3da203e92948fd168ea8781e0de2dcb2ae3ff03a
+Merge: a444179 f9a86f6
+Author: Richard Huan <richard20925@gmail.com>
+Date:   Mon Jul 5 14:39:38 2021 +0800
+
+    Merge branch 'dataset-dev'
+
+commit a44417936e40ccb948098025749d879f36f77bc7
+Author: petershone <515663728@qq.com>
+Date:   Fri Jul 2 12:30:23 2021 +0800
+
+    solver added
+
+commit f9a86f62a17851963dd48d368fd6f61dd26c67c3
+Author: Richard Huan <richard20925@gmail.com>
+Date:   Mon Jun 28 21:53:58 2021 +0800
+
+    Add several real datasets
+
+commit 524eac737a662c6d3106183e99343444c368811a
+Author: jingyu <hujingyucd@qq.com>
+Date:   Tue Jun 22 11:20:44 2021 +0800
+
+    base_solver.py
+
+commit 07c6bbff386d39b5bf9b5380d79b69f0bec29134
+Author: jingyu <hujingyucd@qq.com>
+Date:   Tue Jun 22 10:36:37 2021 +0800
+
+    add base_solver.py
+
+commit ca943014caabcac3ab683d8b98f4feffc1bd62e0
+Author: hujingyucd <37215101+hujingyucd@users.noreply.github.com>
+Date:   Sat Jun 19 12:47:13 2021 +0800
+
+    Update .gitignore
+
+commit b26bf9b7a1246623003079f997643a234b83b0ad
+Author: hujingyucd <37215101+hujingyucd@users.noreply.github.com>
+Date:   Sat Jun 19 12:46:52 2021 +0800
+
+    Create .gitignore
+
+commit 5ee9b6f2996ce6db0cf815e1bf02009bc0c839d8
+Author: hujingyucd <37215101+hujingyucd@users.noreply.github.com>
+Date:   Sat Jun 19 12:40:53 2021 +0800
+
+    Update and rename README to README.md
+
+commit 2463b78b127104feb10c9537ee3f2ffe16ecff9e
+Author: hujingyucd <37215101+hujingyucd@users.noreply.github.com>
+Date:   Sat Jun 19 12:40:20 2021 +0800
+
+    Update README
+
+commit 9c580ee2a749b2bb32b7585049e9c70f4fc7f6d7
+Author: hujingyucd <37215101+hujingyucd@users.noreply.github.com>
+Date:   Sat Jun 19 12:37:14 2021 +0800
+
+    Create README

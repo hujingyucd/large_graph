@@ -3,10 +3,10 @@
         "seed": 999,
         "logging_level": "DEBUG",
         "data_path": "/data/jingyu/graph/large_graph/data/brightkite",
-        "model_save_path": "./released_models",
+        "model_save_path": "./results/released_models",
         "total_train_epoch": 10000,
         "save_model_per_epoch": 5,
-        "log_dir": "./logs",
+        "log_dir": "./results/logs",
         "loss": {
             "area_weight": 10.0,
             "collision_weight": 1.0
