@@ -5,6 +5,9 @@ import os
 import random
 import argparse
 import json
+from pathlib import Path
+
+from torch.utils.tensorboard import SummaryWriter
 
 if __name__ == "__main__":
 
@@ -30,10 +33,12 @@ if __name__ == "__main__":
     from solver.ml_core.datasets import GraphDataset
     from networks.pseudo_tilingnn import PseudoTilinGNN as Gnn
 
-    logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
-                        level=getattr(logging,
-                                      config["training"]["logging_level"]),
-                        datefmt='%Y-%m-%d %H:%M:%S')
+    Path(config["training"]["log_dir"]).mkdir(parents=True, exist_ok=True)
+    logging.basicConfig(
+        filename=os.path.join(config["training"]["log_dir"], "output.log"),
+        format='%(asctime)s %(name)s %(levelname)-8s %(message)s',
+        level=getattr(logging, config["training"]["logging_level"]),
+        datefmt='%Y-%m-%d %H:%M:%S')
 
     torch.manual_seed(config["training"]["seed"])
     random.seed(config["training"]["seed"])
@@ -57,6 +62,10 @@ if __name__ == "__main__":
     optimizer = torch.optim.Adam(gnn.parameters(),
                                  lr=config["training"]["optimizer"]["lr"])
 
+    writer = SummaryWriter(log_dir=config["training"]["log_dir"])
+
+    trainer_logger = logging.getLogger("trainer")
+
     trainer = Trainer(
         gnn,
         dataset_train=dataset_train,
@@ -64,6 +73,8 @@ if __name__ == "__main__":
         device=device,
         model_save_path=config["training"]["model_save_path"],
         optimizer=optimizer,
+        writer=writer,
+        logger_name="trainer",
         loss_weights=config["training"]["loss"],
         total_train_epoch=config["training"]["total_train_epoch"],
         save_model_per_epoch=config["training"]["save_model_per_epoch"])

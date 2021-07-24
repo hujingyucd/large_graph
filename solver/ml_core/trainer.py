@@ -3,26 +3,25 @@ import sys
 import logging
 import torch
 from torch_geometric.data import DataLoader
-from torch.utils.tensorboard import SummaryWriter
 from solver.ml_core.losses import AreaLoss, OverlapLoss
 from solver.ml_solver import MLSolver
 from solver.MIS.greedy_solver import GreedySolver
 
 
 class Trainer():
-    def __init__(
-            self,
-            network,
-            # data_path,
-            dataset_train,
-            dataset_test,
-            device,
-            model_save_path,
-            optimizer,
-            loss_weights=None,
-            resume=True,
-            total_train_epoch=100,
-            save_model_per_epoch=5):
+    def __init__(self,
+                 network,
+                 dataset_train,
+                 dataset_test,
+                 device,
+                 model_save_path,
+                 optimizer,
+                 writer,
+                 logger_name="trainer",
+                 loss_weights=None,
+                 resume=True,
+                 total_train_epoch=100,
+                 save_model_per_epoch=5):
 
         self.device = device
         self.model_save_path = model_save_path
@@ -48,7 +47,9 @@ class Trainer():
 
         self.total_train_epoch = total_train_epoch
         self.save_model_per_epoch = save_model_per_epoch
-        self.writer = SummaryWriter(log_dir="logs")
+
+        self.writer = writer
+        self.logger = logging.getLogger(logger_name)
 
         self.epoch = 0
         self.min_test_loss = float("inf")
@@ -134,7 +135,7 @@ class Trainer():
             collision_losses)
 
     def train_single_epoch(self):
-        logging.info("training epoch start")
+        self.logger.info("training epoch start")
         torch.cuda.empty_cache()
         i = self.epoch
         self.network.train()
@@ -153,7 +154,7 @@ class Trainer():
             try:
                 assert loss_area >= 1.0
             except AssertionError:
-                logging.error("area loss: {}, data: {}".format(
+                self.logger.error("area loss: {}, data: {}".format(
                     loss_area, data.idx))
                 self.save()
 
@@ -161,7 +162,7 @@ class Trainer():
             try:
                 assert loss_collision >= 1.0
             except AssertionError:
-                logging.error("collision loss: {}, data: {}".format(
+                self.logger.error("collision loss: {}, data: {}".format(
                     loss_collision, data.idx))
                 self.save()
 
@@ -181,12 +182,13 @@ class Trainer():
             #     probs, data.edge_index)
             self.optimizer.zero_grad()
             train_loss.backward()
-            logging.info("{}, loss {:6f}, score {:6f}, loss_sol {:6f}".format(
-                i, train_loss.item(), score, loss_solution.item()))
+            self.logger.info(
+                "{}, loss {:6f}, score {:6f}, loss_sol {:6f}".format(
+                    i, train_loss.item(), score, loss_solution.item()))
             self.optimizer.step()
-        logging.info("training epoch done\n\n")
+        self.logger.info("training epoch done\n\n")
 
-        logging.info("testing epoch start")
+        self.logger.info("testing epoch start")
         torch.cuda.empty_cache()
         with torch.no_grad():
             loss_train, loss_train_area, loss_train_coll = \
@@ -205,12 +207,12 @@ class Trainer():
         self.writer.add_scalar("CollisionLoss/test", loss_test_coll,
                                self.epoch)
 
-        logging.info("epoch {} testing loss {:.6f}".format(i, loss_test))
-        logging.info("epoch {} testing area loss {:.6f}".format(
+        self.logger.info("epoch {} testing loss {:.6f}".format(i, loss_test))
+        self.logger.info("epoch {} testing area loss {:.6f}".format(
             i, loss_test_area))
-        logging.info("epoch {} testing collision loss {:.6f}".format(
+        self.logger.info("epoch {} testing collision loss {:.6f}".format(
             i, loss_test_coll))
-        logging.info("testing epoch end!\n\n")
+        self.logger.info("testing epoch end!\n\n")
 
         # result debugging
         if (loss_test < self.min_test_loss
@@ -220,11 +222,11 @@ class Trainer():
                 self.min_test_loss_epoch = self.epoch
             torch.cuda.empty_cache()
             self.save()
-            logging.info("model saved at epoch {}".format(i))
+            self.logger.info("model saved at epoch {}".format(i))
 
     def train(self):
-        logging.info("training start")
+        self.logger.info("training start")
         while self.epoch < self.total_train_epoch:
             self.train_single_epoch()
             self.epoch += 1
-        logging.info("training done\n\n")
+        self.logger.info("training done\n\n")
