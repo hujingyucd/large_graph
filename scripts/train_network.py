@@ -60,6 +60,7 @@ if __name__ == "__main__":
     dataset_test = GraphDataset(root=data_path, split="test", subgraph_num=200)
 
     optimizer = torch.optim.Adam(gnn.parameters(),
+                                 eps=1e-4,
                                  lr=config["training"]["optimizer"]["lr"])
 
     writer = SummaryWriter(log_dir=config["training"]["log_dir"])
