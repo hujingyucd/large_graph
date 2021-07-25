@@ -6,6 +6,7 @@ from torch_geometric.data import DataLoader
 from solver.ml_core.losses import AreaLoss, OverlapLoss
 from solver.ml_solver import MLSolver
 from solver.MIS.greedy_solver import GreedySolver
+from utils.graph_utils import sample_solution_greedy
 
 
 class Trainer():
@@ -168,18 +169,21 @@ class Trainer():
 
             train_loss = loss_area * loss_collision
 
-            solution = torch.bernoulli(probs)
+            # solution = torch.where(probs > 0.5, 1.0, 0.0)
+            # solution = torch.bernoulli(probs)
             with torch.no_grad():
-                score = self.area_loss(solution) * self.collision_loss(
-                    solution, data.edge_index)
+                _, mask = sample_solution_greedy(data, probs)
+                solution = torch.where(mask, 1.0, 0.0)
+                score = self.area_loss(solution).detach(
+                ) * self.collision_loss(solution, data.edge_index).detach()
+                solution = solution.long()
             if score < train_loss:
-                loss_solution = self.solution_loss(probs, solution)
+                loss_solution = self.solution_loss(
+                    torch.cat((1 - probs, probs), dim=1), solution)
             else:
                 loss_solution = torch.tensor(0.0)
             train_loss += loss_solution
 
-            # train_loss = self.area_loss(probs) * self.collision_loss(
-            #     probs, data.edge_index)
             self.optimizer.zero_grad()
             train_loss.backward()
             self.optimizer.step()
@@ -187,6 +191,7 @@ class Trainer():
             self.logger.debug(
                 "{}, loss {:6f}, score {:6f}, loss_sol {:6f}".format(
                     i, train_loss.item(), score, loss_solution.item()))
+
         self.logger.info("training epoch done\n\n")
 
         self.logger.info("testing epoch start")

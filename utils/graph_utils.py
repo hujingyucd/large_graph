@@ -2,8 +2,8 @@ import torch
 from torch_geometric.data import Data
 
 
-def sample_solution_greedy(graph: Data,
-                           priority: torch.Tensor) -> torch.LongTensor:
+def sample_solution_greedy(
+        graph: Data, priority: torch.Tensor) -> (torch.LongTensor, torch.bool):
     """
     Greedily generate maximal independent set with given priority.
     graph: torch_geometric Data object
@@ -27,4 +27,4 @@ def sample_solution_greedy(graph: Data,
             mark[node_idx] = True
             mark[adj_list[node_idx]] = True
 
-    return torch.arange(0, len(indices), dtype=torch.long)[output]
+    return torch.arange(0, len(indices), dtype=torch.long)[output], output
