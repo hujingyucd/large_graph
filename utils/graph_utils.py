@@ -8,7 +8,7 @@ def sample_solution_greedy(
     Greedily generate maximal independent set with given priority.
     graph: torch_geometric Data object
     weight: N * 1 tensor
-    output: length N tensor
+    output: 2 length N tensor
     """
     _, indices = torch.sort(priority, dim=0, descending=True)
     indices.squeeze_()
