@@ -53,6 +53,11 @@ class MLSolver(BaseSolver):
             if (v1 not in graph[v2]):
                 graph[v2].append(v1)
 
+        if(self.G.contains_isolated_nodes()):
+            for v in range(self.G.num_nodes):
+                if (v not in graph):
+                    graph[v] = []
+
         # sort by node degree
         a = sorted(graph.items(),
                    key=lambda x: np.squeeze(self.probs.T)[x[0]],
