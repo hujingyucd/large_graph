@@ -3,7 +3,7 @@ import sys
 import logging
 import torch
 from torch_geometric.data import DataLoader
-from solver.ml_core.losses import AreaLoss, OverlapLoss
+from solver.ml_core.losses import AreaLoss, OverlapLoss, SolutionLoss
 from solver.ml_solver import MLSolver
 from solver.MIS.greedy_solver import GreedySolver
 from utils.graph_utils import sample_solution_greedy
@@ -41,10 +41,13 @@ class Trainer():
             self.area_loss = AreaLoss(weight=loss_weights["area_weight"])
             self.collision_loss = OverlapLoss(
                 weight=loss_weights["collision_weight"])
+            self.solution_loss = SolutionLoss(
+                weight=loss_weights["solution_weight"])
         else:
             self.area_loss = AreaLoss()
             self.collision_loss = OverlapLoss()
-        self.solution_loss = torch.nn.CrossEntropyLoss()
+            self.solution_loss = SolutionLoss()
+        # self.solution_loss = torch.nn.CrossEntropyLoss()
 
         self.total_train_epoch = total_train_epoch
         self.save_model_per_epoch = save_model_per_epoch
@@ -169,23 +172,29 @@ class Trainer():
 
             train_loss = loss_area * loss_collision
 
-            # solution = torch.where(probs > 0.5, 1.0, 0.0)
-            # solution = torch.bernoulli(probs)
-            with torch.no_grad():
-                _, mask = sample_solution_greedy(data, probs)
-                solution = torch.where(mask, 1.0, 0.0)
-                score = self.area_loss(solution).detach(
-                ) * self.collision_loss(solution, data.edge_index).detach()
-                solution = solution.long()
-            if score < train_loss:
-                loss_solution = self.solution_loss(
-                    torch.cat((1 - probs, probs), dim=1), solution)
+            if self.epoch % 3 == 0:
+                with torch.no_grad():
+                    _, mask = sample_solution_greedy(data, probs)
+                    solution = torch.where(mask, 1.0, 0.0)
+                    score = self.area_loss(
+                        solution).detach() * self.collision_loss(
+                            solution, data.edge_index).detach()
+                    solution = solution.long()
+                    reward = train_loss - score
+
+                loss_solution = self.solution_loss(probs, mask, reward)
+                self.logger.debug("{} data {} sl {}".format(
+                    i, data.idx, loss_solution.item()))
+                train_loss = train_loss + loss_solution
             else:
-                loss_solution = torch.tensor(0.0)
-            train_loss += loss_solution
+                score = 0
+                loss_solution = torch.tensor(0)
 
             self.optimizer.zero_grad()
-            train_loss.backward()
+            try:
+                train_loss.backward()
+            except RuntimeError:
+                self.save()
             self.optimizer.step()
 
             self.logger.debug(

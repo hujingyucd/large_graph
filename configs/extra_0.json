@@ -9,7 +9,8 @@
         "log_dir": "./results/extra_0/logs",
         "loss": {
             "area_weight": 10.0,
-            "collision_weight": 1.0
+            "collision_weight": 1.0,
+            "solution_weight": 10.0
         },
         "optimizer": {
             "lr": 1e-5

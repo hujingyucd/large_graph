@@ -44,3 +44,15 @@ class OverlapLoss(nn.Module):
                 prob_i * prob_k, min=self.eps, max=1 - self.eps)))
         # assert 1.0 <= result
         return result
+
+
+class SolutionLoss(nn.Module):
+    def __init__(self, weight=10.0, eps=1e-7):
+        super(SolutionLoss, self).__init__()
+        self.weight = weight
+        self.eps = eps
+
+    def forward(self, x, solution_mask, reward):
+        result = 1 - self.weight * torch.mean(
+            torch.where(solution_mask, 1.0, -1.0) * torch.log(x)) * reward
+        return result
