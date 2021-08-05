@@ -20,6 +20,7 @@ class Trainer():
                  writer,
                  logger_name="trainer",
                  loss_weights=None,
+                 sample_per_epoch=0,
                  resume=True,
                  total_train_epoch=100,
                  save_model_per_epoch=5):
@@ -48,6 +49,7 @@ class Trainer():
             self.collision_loss = OverlapLoss()
             self.solution_loss = SolutionLoss()
         # self.solution_loss = torch.nn.CrossEntropyLoss()
+        self.sample_per_epoch = sample_per_epoch
 
         self.total_train_epoch = total_train_epoch
         self.save_model_per_epoch = save_model_per_epoch
@@ -172,7 +174,7 @@ class Trainer():
 
             train_loss = loss_area * loss_collision
 
-            if self.epoch % 3 == 0:
+            if self.sample_per_epoch and i % self.sample_per_epoch == 0:
                 with torch.no_grad():
                     _, mask = sample_solution_greedy(data, probs)
                     solution = torch.where(mask, 1.0, 0.0)
@@ -190,8 +192,8 @@ class Trainer():
                 score = 0
                 loss_solution = torch.tensor(0)
 
-            self.optimizer.zero_grad()
             try:
+                self.optimizer.zero_grad()
                 train_loss.backward()
             except RuntimeError:
                 self.save()

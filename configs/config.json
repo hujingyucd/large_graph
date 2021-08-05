@@ -2,7 +2,7 @@
     "training": {
         "seed": 999,
         "logging_level": "DEBUG",
-        "data_path": "/data/jingyu/graph/large_graph/data/brightkite",
+        "data_path": "/research/dept8/fyp21/cwf2101/data/30-60-90+equilateral",
         "model_save_path": "./results/default/released_models",
         "total_train_epoch": 10000,
         "save_model_per_epoch": 5,
@@ -12,6 +12,7 @@
             "collision_weight": 10.0,
             "solution_weight": 10.0
         },
+        "sample_per_epoch": 0,
         "optimizer": {
             "lr": 1e-5
         }
