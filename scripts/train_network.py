@@ -56,8 +56,8 @@ if __name__ == "__main__":
     data_path = config["training"]["data_path"]
     dataset_train = GraphDataset(root=data_path,
                                  split="train",
-                                 subgraph_num=500)
-    dataset_test = GraphDataset(root=data_path, split="test", subgraph_num=200)
+                                 subgraph_num=2500)
+    dataset_test = GraphDataset(root=data_path, split="test", subgraph_num=500)
 
     optimizer = torch.optim.Adam(gnn.parameters(),
                                  eps=1e-4,
@@ -77,6 +77,8 @@ if __name__ == "__main__":
         writer=writer,
         logger_name="trainer",
         loss_weights=config["training"]["loss"],
+        sample_per_epoch=config["training"]["sample_per_epoch"],
+        sample_method=config["training"]["sample_method"],
         total_train_epoch=config["training"]["total_train_epoch"],
         save_model_per_epoch=config["training"]["save_model_per_epoch"])
     trainer.train()

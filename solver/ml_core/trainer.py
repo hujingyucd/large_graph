@@ -6,7 +6,6 @@ from torch_geometric.data import DataLoader
 from solver.ml_core.losses import AreaLoss, OverlapLoss, SolutionLoss
 from solver.ml_solver import MLSolver
 from solver.MIS.greedy_solver import GreedySolver
-from utils.graph_utils import sample_solution_greedy
 
 
 class Trainer():
@@ -21,6 +20,7 @@ class Trainer():
                  logger_name="trainer",
                  loss_weights=None,
                  sample_per_epoch=0,
+                 sample_method="bernoulli",
                  resume=True,
                  total_train_epoch=100,
                  save_model_per_epoch=5):
@@ -49,6 +49,12 @@ class Trainer():
             self.collision_loss = OverlapLoss()
             self.solution_loss = SolutionLoss()
         # self.solution_loss = torch.nn.CrossEntropyLoss()
+        if sample_method == "bernoulli":
+            from utils.graph_utils import generate_bernoulli
+            self.sample_solution = generate_bernoulli(prob=0.9)
+        elif sample_method == "greedy":
+            from utils.graph_utils import sample_solution_greedy
+            self.sample_solution = sample_solution_greedy
         self.sample_per_epoch = sample_per_epoch
 
         self.total_train_epoch = total_train_epoch
@@ -176,7 +182,7 @@ class Trainer():
 
             if self.sample_per_epoch and i % self.sample_per_epoch == 0:
                 with torch.no_grad():
-                    _, mask = sample_solution_greedy(data, probs)
+                    _, mask = self.sample_solution(data, probs)
                     solution = torch.where(mask, 1.0, 0.0)
                     score = self.area_loss(
                         solution).detach() * self.collision_loss(
