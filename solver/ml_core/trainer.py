@@ -200,8 +200,7 @@ class Trainer():
                 log_items += [
                     "score {:6f}".format(score.item()),
                     "loss_solution {:6f}".format(loss_solution.item()),
-                    "score_area {:6f}".format(score_area.item()),
-                    "score_coll {:6f}".format(score_coll.item())
+                    "score_area {:6f}".format(score_area.item())
                 ]
                 train_loss = train_loss * loss_solution
 

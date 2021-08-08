@@ -58,6 +58,12 @@ def generate_bernoulli(prob=0.9):
                 output[node_idx] = True
                 mark[node_idx] = True
                 mark[adj_list[node_idx]] = True
+        for node_idx in indices:
+            if not mark[node_idx]:
+                output[node_idx] = True
+                mark[node_idx] = True
+                mark[adj_list[node_idx]] = True
+
 
         return torch.arange(0, len(indices), dtype=torch.long)[output], output
 
