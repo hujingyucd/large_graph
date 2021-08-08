@@ -180,23 +180,30 @@ class Trainer():
 
             train_loss = loss_area * loss_collision
 
+            log_items = [
+                f"{i}", "idx {}".format(data.idx.item()),
+                "loss {:6f}".format(train_loss.item())
+            ]
+
             if self.sample_per_epoch and i % self.sample_per_epoch == 0:
                 with torch.no_grad():
                     _, mask = self.sample_solution(data, probs)
                     solution = torch.where(mask, 1.0, 0.0)
-                    score = self.area_loss(
-                        solution).detach() * self.collision_loss(
-                            solution, data.edge_index).detach()
+                    score_area = self.area_loss(solution).detach()
+                    score_coll = self.collision_loss(solution,
+                                                     data.edge_index).detach()
+                    score = score_area * score_coll
                     solution = solution.long()
                     reward = train_loss - score
 
                 loss_solution = self.solution_loss(probs, mask, reward)
-                self.logger.debug("{} data {} sl {}".format(
-                    i, data.idx, loss_solution.item()))
+                log_items += [
+                    "score {:6f}".format(score.item()),
+                    "loss_solution {:6f}".format(loss_solution.item()),
+                    "score_area {:6f}".format(score_area.item()),
+                    "score_coll {:6f}".format(score_coll.item())
+                ]
                 train_loss = train_loss + loss_solution
-            else:
-                score = 0
-                loss_solution = torch.tensor(0)
 
             try:
                 self.optimizer.zero_grad()
@@ -205,9 +212,7 @@ class Trainer():
                 self.save()
             self.optimizer.step()
 
-            self.logger.debug(
-                "{}, loss {:6f}, score {:6f}, loss_sol {:6f}".format(
-                    i, train_loss.item(), score, loss_solution.item()))
+            self.logger.debug(", ".join(log_items))
 
         self.logger.info("training epoch done\n\n")
 
