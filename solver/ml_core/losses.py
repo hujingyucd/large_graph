@@ -51,8 +51,10 @@ class SolutionLoss(nn.Module):
         super(SolutionLoss, self).__init__()
         self.weight = weight
         self.eps = eps
+        self.sigmoid = nn.Sigmoid()
 
     def forward(self, x, solution_mask, reward):
-        result = 1 - self.weight * torch.mean(
+        temp = torch.mean(
             torch.where(solution_mask, 1.0, -1.0) * torch.log(x)) * reward
+        result = 1 + self.weight * self.sigmoid(1 - temp)
         return result

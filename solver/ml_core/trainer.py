@@ -203,7 +203,7 @@ class Trainer():
                     "score_area {:6f}".format(score_area.item()),
                     "score_coll {:6f}".format(score_coll.item())
                 ]
-                train_loss = train_loss + loss_solution
+                train_loss = train_loss * loss_solution
 
             try:
                 self.optimizer.zero_grad()
