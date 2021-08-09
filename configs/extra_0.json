@@ -12,7 +12,7 @@
             "collision_weight": 1.0,
             "solution_weight": 10.0
         },
-        "sample_per_epoch": 0,
+        "sample_per_epoch": 3,
         "sample_method": "bernoulli",
         "optimizer": {
             "lr": 1e-5

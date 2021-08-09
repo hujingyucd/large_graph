@@ -64,7 +64,6 @@ def generate_bernoulli(prob=0.9):
                 mark[node_idx] = True
                 mark[adj_list[node_idx]] = True
 
-
         return torch.arange(0, len(indices), dtype=torch.long)[output], output
 
     return sample_solution_bernoulli
