@@ -3,26 +3,26 @@ import sys
 import logging
 import torch
 from torch_geometric.data import DataLoader
-from torch.utils.tensorboard import SummaryWriter
 from solver.ml_core.losses import AreaLoss, OverlapLoss
 from solver.ml_solver import MLSolver
 from solver.MIS.greedy_solver import GreedySolver
+from utils.graph_utils import sample_solution_greedy
 
 
 class Trainer():
-    def __init__(
-            self,
-            network,
-            # data_path,
-            dataset_train,
-            dataset_test,
-            device,
-            model_save_path,
-            optimizer,
-            loss_weights=None,
-            resume=False,
-            total_train_epoch=100,
-            save_model_per_epoch=5):
+    def __init__(self,
+                 network,
+                 dataset_train,
+                 dataset_test,
+                 device,
+                 model_save_path,
+                 optimizer,
+                 writer,
+                 logger_name="trainer",
+                 loss_weights=None,
+                 resume=True,
+                 total_train_epoch=100,
+                 save_model_per_epoch=5):
 
         self.device = device
         self.model_save_path = model_save_path
@@ -44,10 +44,13 @@ class Trainer():
         else:
             self.area_loss = AreaLoss()
             self.collision_loss = OverlapLoss()
+        self.solution_loss = torch.nn.CrossEntropyLoss()
 
         self.total_train_epoch = total_train_epoch
         self.save_model_per_epoch = save_model_per_epoch
-        self.writer = SummaryWriter(log_dir="logs")
+
+        self.writer = writer
+        self.logger = logging.getLogger(logger_name)
 
         self.epoch = 0
         self.min_test_loss = float("inf")
@@ -133,7 +136,7 @@ class Trainer():
             collision_losses)
 
     def train_single_epoch(self):
-        logging.info("training epoch start")
+        self.logger.info("training epoch start")
         torch.cuda.empty_cache()
         i = self.epoch
         self.network.train()
@@ -146,55 +149,76 @@ class Trainer():
             except AssertionError:
                 torch.save(probs, "./probs.pt")
                 self.save()
-                sys.exit("probs {}".format(data.idx))
+                sys.exit("probs, data: {}".format(data.idx))
 
             loss_area = self.area_loss(probs)
             try:
                 assert loss_area >= 1.0
             except AssertionError:
-                logging.error("area loss: {}, node: {}".format(
-                    loss_area, data.num_nodes))
+                self.logger.error("area loss: {}, data: {}".format(
+                    loss_area, data.idx))
                 self.save()
+
             loss_collision = self.collision_loss(probs, data.edge_index)
             try:
                 assert loss_collision >= 1.0
             except AssertionError:
-                logging.error("collision loss: {}, node: {}".format(
-                    loss_collision, data.num_nodes))
+                self.logger.error("collision loss: {}, data: {}".format(
+                    loss_collision, data.idx))
                 self.save()
 
             train_loss = loss_area * loss_collision
-            # train_loss = self.area_loss(probs) * self.collision_loss(
-            #     probs, data.edge_index)
+
+            # solution = torch.where(probs > 0.5, 1.0, 0.0)
+            # solution = torch.bernoulli(probs)
+            with torch.no_grad():
+                _, mask = sample_solution_greedy(data, probs)
+                solution = torch.where(mask, 1.0, 0.0)
+                score = self.area_loss(solution).detach(
+                ) * self.collision_loss(solution, data.edge_index).detach()
+                solution = solution.long()
+            if score < train_loss:
+                loss_solution = self.solution_loss(
+                    torch.cat((1 - probs, probs), dim=1), solution)
+            else:
+                loss_solution = torch.tensor(0.0)
+            train_loss += loss_solution
+
             self.optimizer.zero_grad()
             train_loss.backward()
-            logging.info("{}, loss {:6f}".format(i, train_loss.item()))
             self.optimizer.step()
-        logging.info("training epoch done\n\n")
 
-        logging.info("testing epoch start")
+            self.logger.debug(
+                "{}, loss {:6f}, score {:6f}, loss_sol {:6f}".format(
+                    i, train_loss.item(), score, loss_solution.item()))
+
+        self.logger.info("training epoch done\n\n")
+
+        self.logger.info("testing epoch start")
         torch.cuda.empty_cache()
-        loss_train, loss_train_area, loss_train_coll = self.test_single_epoch(
-            self.loader_train)
+        with torch.no_grad():
+            loss_train, loss_train_area, loss_train_coll = \
+                    self.test_single_epoch(self.loader_train)
         self.writer.add_scalar("Loss/train", loss_train, self.epoch)
         self.writer.add_scalar("AreaLoss/train", loss_train_area, self.epoch)
         self.writer.add_scalar("CollisionLoss/train", loss_train_coll,
                                self.epoch)
 
         torch.cuda.empty_cache()
-        loss_test, loss_test_area, loss_test_coll = self.test_single_epoch(
-            self.loader_test)
+        with torch.no_grad():
+            loss_test, loss_test_area, loss_test_coll = self.test_single_epoch(
+                self.loader_test)
         self.writer.add_scalar("Loss/test", loss_test, self.epoch)
         self.writer.add_scalar("AreaLoss/test", loss_test_area, self.epoch)
         self.writer.add_scalar("CollisionLoss/test", loss_test_coll,
                                self.epoch)
 
-        logging.info("epoch {} testing loss {:.6f}".format(i, loss_test))
-        logging.info("epoch {} testing area loss {:.6f}".format(
+        self.logger.info("epoch {} testing loss {:.6f}".format(i, loss_test))
+        self.logger.info("epoch {} testing area loss {:.6f}".format(
             i, loss_test_area))
-        logging.info("epoch {} testing collision loss {:.6f}".format(
+        self.logger.info("epoch {} testing collision loss {:.6f}".format(
             i, loss_test_coll))
-        logging.info("testing epoch end!\n\n")
+        self.logger.info("testing epoch end!\n\n")
 
         # result debugging
         if (loss_test < self.min_test_loss
@@ -204,11 +228,11 @@ class Trainer():
                 self.min_test_loss_epoch = self.epoch
             torch.cuda.empty_cache()
             self.save()
-            logging.info("model saved at epoch {}".format(i))
+            self.logger.info("model saved at epoch {}".format(i))
 
     def train(self):
-        logging.info("training start")
+        self.logger.info("training start")
         while self.epoch < self.total_train_epoch:
             self.train_single_epoch()
             self.epoch += 1
-        logging.info("training done\n\n")
+        self.logger.info("training done\n\n")

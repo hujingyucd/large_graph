@@ -2,11 +2,11 @@
     "training": {
         "seed": 999,
         "logging_level": "DEBUG",
-        "data_path": "/data/jingyu/graph/large_graph/data/brightkite",
-        "model_save_path": "./results/default/released_models",
+        "data_path": "/research/dept8/fyp21/cwf2101/data/brightkite",
+        "model_save_path": "./results/extra_0/released_models",
         "total_train_epoch": 10000,
         "save_model_per_epoch": 5,
-        "log_dir": "./results/default/logs",
+        "log_dir": "./results/extra_0/logs",
         "loss": {
             "area_weight": 10.0,
             "collision_weight": 1.0

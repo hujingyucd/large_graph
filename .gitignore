@@ -1,11 +1,12 @@
 .history
 .DS_Store
-released_models
+released_models/
 logs/
 *.swp
 data/
-run.sh
+run*.sh
 out.log
+results/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
