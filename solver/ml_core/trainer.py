@@ -138,7 +138,7 @@ class Trainer():
             if self.epoch % 20 == 0 and self.epoch > 0 and j < 10:
                 self.greedy_based_solution(batch, probs.cpu().detach().numpy())
                 j = j + 1
-            area_losses.append(self.area_loss(probs).detach())
+            area_losses.append(self.area_loss(probs, data.x).detach())
             collision_losses.append(
                 self.collision_loss(probs, data.edge_index).detach())
         area_losses = torch.stack(area_losses)
@@ -163,7 +163,7 @@ class Trainer():
                 self.save()
                 sys.exit("probs, data: {}".format(data.idx))
 
-            loss_area = self.area_loss(probs)
+            loss_area = self.area_loss(probs, data.x)
             try:
                 assert loss_area >= 1.0
             except AssertionError:
@@ -190,7 +190,7 @@ class Trainer():
                 with torch.no_grad():
                     _, mask = self.sample_solution(data, probs)
                     solution = torch.where(mask, 1.0, 0.0)
-                    score_area = self.area_loss(solution).detach()
+                    score_area = self.area_loss(solution, data.x).detach()
                     score_coll = self.collision_loss(solution,
                                                      data.edge_index).detach()
                     score = score_area * score_coll

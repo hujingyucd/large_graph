@@ -15,8 +15,7 @@ class AreaLoss(nn.Module):
         if areas is None:
             avg_area = torch.mean(x)
         else:
-            # different from tilingnn, to be confirmed
-            avg_area = x * areas / torch.sum(areas)
+            avg_area = torch.sum(x * areas) / torch.sum(areas)
         avg_area = torch.clamp(avg_area, min=self.eps)
         result = 1.0 - self.weight * torch.log(avg_area)
         # assert 1.0 <= result

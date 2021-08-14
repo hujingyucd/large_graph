@@ -216,7 +216,7 @@ class TileGraphDataset(Dataset):
         self.logger.error("please generate tile graph data first")
 
     def process(self):
-        logging.info("processing the data...")
+        self.logger.info("processing the data...")
         if not os.path.exists(os.path.join(self.processed_dir, self.split)):
             os.mkdir(os.path.join(self.processed_dir, self.split))
         for raw_path in self.raw_file_names:
@@ -228,11 +228,14 @@ class TileGraphDataset(Dataset):
                 with open(os.path.join(self.raw_dir, raw_path), "rb") as f:
                     d = pickle.load(f)
             except Exception as e:
-                logging.error("read {} {}".format(str(e), raw_path))
+                self.logger.error("read {} {}".format(str(e), raw_path))
 
             try:
-                node_features = [feature[-1] for feature in d["node_features"]]
-                node_features = torch.tensor(node_features)
+                node_features = [
+                    feature[-1:] for feature in d["node_features"]
+                ]
+                node_features = torch.tensor(node_features,
+                                             dtype=torch.float32)
                 edges = d["collide_edge_index"]
                 edges = torch.tensor(edges, dtype=torch.long)
 
@@ -245,11 +248,11 @@ class TileGraphDataset(Dataset):
                 if self.pre_transform is not None:
                     data = self.pre_transform(data)
 
-                logging.info("{}, node: {}, edge: {}".format(
+                self.logger.info("{}, node: {}, edge: {}".format(
                     target_path, data.num_nodes, data.num_edges))
                 torch.save(data, target_path)
             except Exception as e:
-                logging.error("{} {}".format(str(e), raw_path))
+                self.logger.error("{} {}".format(str(e), raw_path))
 
     def get(self, idx):
         try:
