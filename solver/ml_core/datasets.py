@@ -190,7 +190,7 @@ class TileGraphDataset(Dataset):
         self.logger = logging.getLogger(logger_name)
         self.split = split
         self.subgraph_num = subgraph_num
-        super(GraphDataset, self).__init__(root, transform, pre_transform)
+        super(TileGraphDataset, self).__init__(root, transform, pre_transform)
 
     @property
     def raw_file_names(self):
@@ -220,32 +220,43 @@ class TileGraphDataset(Dataset):
         if not os.path.exists(os.path.join(self.processed_dir, self.split)):
             os.mkdir(os.path.join(self.processed_dir, self.split))
         for raw_path in self.raw_file_names:
-            with open(os.path.join(self.raw_dir, raw_path), "rb") as f:
-                d = pickle.load(f)
+            try:
+                target_path = os.path.splitext(
+                    os.path.join(self.processed_dir, raw_path))[0] + ".pt"
+                if os.path.exists(target_path):
+                    continue
+                with open(os.path.join(self.raw_dir, raw_path), "rb") as f:
+                    d = pickle.load(f)
+            except Exception as e:
+                logging.error("read {} {}".format(str(e), raw_path))
 
-            node_features = [feature[-1] for feature in d["node_features"]]
-            edges = d["collide_edge_index"]
+            try:
+                node_features = [feature[-1] for feature in d["node_features"]]
+                node_features = torch.tensor(node_features)
+                edges = d["collide_edge_index"]
+                edges = torch.tensor(edges, dtype=torch.long)
 
-            data = Data(x=node_features, edge_index=edges)
-            data.num_nodes = len(node_features)
+                data = Data(x=node_features, edge_index=edges)
+                data.num_nodes = len(node_features)
 
-            if self.pre_filter is not None and not self.pre_filter(data):
-                continue
+                if self.pre_filter is not None and not self.pre_filter(data):
+                    continue
 
-            if self.pre_transform is not None:
-                data = self.pre_transform(data)
+                if self.pre_transform is not None:
+                    data = self.pre_transform(data)
 
-            logging.info("node: {}, edge: {}".format(data.num_nodes,
-                                                     data.num_edges))
-
-            torch.save(
-                data,
-                os.path.splitext(os.path.join(self.processed_dir, raw_path))[0]
-                + ".pt")
+                logging.info("{}, node: {}, edge: {}".format(
+                    target_path, data.num_nodes, data.num_edges))
+                torch.save(data, target_path)
+            except Exception as e:
+                logging.error("{} {}".format(str(e), raw_path))
 
     def get(self, idx):
-        data = torch.load(
-            os.path.join(self.processed_dir, self.split,
-                         'data_{}.pt'.format(idx)))
-        data.idx = idx
+        try:
+            data = torch.load(
+                os.path.join(self.processed_dir, self.split,
+                             'data_{}.pt'.format(idx)))
+            data.idx = idx
+        except FileNotFoundError:
+            data = self.get(0)
         return data
