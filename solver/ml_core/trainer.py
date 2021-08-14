@@ -21,6 +21,7 @@ class Trainer():
                  loss_weights=None,
                  sample_per_epoch=0,
                  sample_method="bernoulli",
+                 bernoulli_prob=0.81,
                  resume=True,
                  total_train_epoch=100,
                  save_model_per_epoch=5):
@@ -51,7 +52,7 @@ class Trainer():
         # self.solution_loss = torch.nn.CrossEntropyLoss()
         if sample_method == "bernoulli":
             from utils.graph_utils import generate_bernoulli
-            self.sample_solution = generate_bernoulli(prob=0.9)
+            self.sample_solution = generate_bernoulli(prob=bernoulli_prob)
         elif sample_method == "greedy":
             from utils.graph_utils import sample_solution_greedy
             self.sample_solution = sample_solution_greedy
