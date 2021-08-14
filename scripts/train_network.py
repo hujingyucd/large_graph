@@ -30,7 +30,7 @@ if __name__ == "__main__":
     sys.path[0] = parentdir
 
     from solver.ml_core.trainer import Trainer
-    from solver.ml_core.datasets import GraphDataset
+    from solver.ml_core.datasets import TileGraphDataset
     from networks.pseudo_tilingnn import PseudoTilinGNN as Gnn
 
     Path(config["training"]["log_dir"]).mkdir(parents=True, exist_ok=True)
@@ -54,10 +54,12 @@ if __name__ == "__main__":
     # gnn = nn.DataParallel(gnn,device_ids=[0,2,3])
 
     data_path = config["training"]["data_path"]
-    dataset_train = GraphDataset(root=data_path,
-                                 split="train",
-                                 subgraph_num=2500)
-    dataset_test = GraphDataset(root=data_path, split="test", subgraph_num=500)
+    dataset_train = TileGraphDataset(root=data_path,
+                                     split="train",
+                                     subgraph_num=2000)
+    dataset_test = TileGraphDataset(root=data_path,
+                                    split="test",
+                                    subgraph_num=400)
 
     optimizer = torch.optim.Adam(gnn.parameters(),
                                  eps=1e-4,
@@ -75,7 +77,7 @@ if __name__ == "__main__":
         model_save_path=config["training"]["model_save_path"],
         optimizer=optimizer,
         writer=writer,
-        logger_name="trainer",
+        logger_name="TRAINER",
         loss_weights=config["training"]["loss"],
         sample_per_epoch=config["training"]["sample_per_epoch"],
         sample_method=config["training"]["sample_method"],

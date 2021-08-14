@@ -17,9 +17,12 @@ if __name__ == "__main__":
     currentdir = os.path.dirname(os.path.realpath(__file__))
     parentdir = os.path.dirname(currentdir)
     sys.path.append(parentdir)
-    from solver.ml_core.datasets import GraphDataset
-    ds = GraphDataset(root=args.root, url=args.url, split="train")
-    ds = GraphDataset(root=args.root,
-                      url=args.url,
-                      split="test",
-                      subgraph_num=2000)
+    # from solver.ml_core.datasets import GraphDataset
+    # ds = GraphDataset(root=args.root, url=args.url, split="train")
+    # ds = GraphDataset(root=args.root,
+    #                   url=args.url,
+    #                   split="test",
+    #                   subgraph_num=2000)
+    from solver.ml_core.datasets import TileGraphDataset
+    ds = TileGraphDataset(root=args.root, split="train", subgraph_num=2000)
+    ds = TileGraphDataset(root=args.root, split="test", subgraph_num=400)
