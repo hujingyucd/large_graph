@@ -189,12 +189,13 @@ class Trainer():
             if self.sample_per_epoch and i % self.sample_per_epoch == 0:
                 with torch.no_grad():
                     _, mask = self.sample_solution(data, probs)
+                    mask = torch.unsqueeze(mask, 1)
                     solution = torch.where(mask, 1.0, 0.0)
                     score_area = self.area_loss(solution, data.x).detach()
                     score_coll = self.collision_loss(solution,
                                                      data.edge_index).detach()
                     score = score_area * score_coll
-                    solution = solution.long()
+                    # solution = solution.long()
                     reward = train_loss - score
 
                 loss_solution = self.solution_loss(probs, mask, reward)
