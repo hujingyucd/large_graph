@@ -55,7 +55,7 @@ class SolutionLoss(nn.Module):
 
     def forward(self, x, solution_mask, reward):
         solution_sign = torch.where(solution_mask, 1.0, -1.0).detach()
-        weighted_reward = torch.mean(solution_sign * torch.log(x)) * reward
+        weighted_reward = torch.mean(solution_sign * x) * reward
         weighted_reward = weighted_reward * self.scale
         result = 1 + self.weight * (1 - self.sigmoid(weighted_reward))
         return result

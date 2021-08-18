@@ -72,7 +72,7 @@ class Trainer():
         if resume is True:
             self.load()
 
-    def save(self):
+    def save(self, prefix=""):
         try:
             os.mkdir(self.model_save_path)
         except FileExistsError:
@@ -80,11 +80,11 @@ class Trainer():
         torch.save(
             self.network.state_dict(),
             os.path.join(self.model_save_path,
-                         "model_{}.pth".format(self.epoch)))
+                         "{}model_{}.pth".format(prefix, self.epoch)))
         torch.save(
             self.optimizer.state_dict(),
             os.path.join(self.model_save_path,
-                         "optimizer_{}.pth".format(self.epoch)))
+                         "{}optimizer_{}.pth".format(prefix, self.epoch)))
         data_dict = {
             "epoch": self.epoch,
             "min_test_loss": self.min_test_loss,
@@ -94,9 +94,11 @@ class Trainer():
         torch.save(
             data_dict,
             os.path.join(self.model_save_path,
-                         "datadict_{}.pth".format(self.epoch)))
+                         "{}datadict_{}.pth".format(prefix, self.epoch)))
 
-        torch.save(data_dict, os.path.join(self.model_save_path, "latest.pth"))
+        torch.save(
+            data_dict,
+            os.path.join(self.model_save_path, "{}latest.pth".format(prefix)))
 
     def load(self):
         target_path = os.path.join(self.model_save_path, "latest.pth")
@@ -153,6 +155,7 @@ class Trainer():
         i = self.epoch
         self.network.train()
         for batch in self.loader_train:
+            self.optimizer.zero_grad()
             # get prediction
             data = batch.to(self.device)
             probs = self.network(x=data.x, col_e_idx=data.edge_index)
@@ -160,7 +163,7 @@ class Trainer():
                 assert not torch.any(torch.isnan(probs))
             except AssertionError:
                 torch.save(probs, "./probs.pt")
-                self.save()
+                self.save("nan")
                 sys.exit("probs, data: {}".format(data.idx))
 
             loss_area = self.area_loss(probs, data.x)
@@ -207,10 +210,9 @@ class Trainer():
                 train_loss = train_loss * loss_solution
 
             try:
-                self.optimizer.zero_grad()
                 train_loss.backward()
             except RuntimeError:
-                self.save()
+                self.save("backward")
             self.optimizer.step()
 
             self.logger.debug(", ".join(log_items))
