@@ -4,8 +4,6 @@ import logging
 import torch
 from torch_geometric.data import DataLoader
 from solver.ml_core.losses import AreaLoss, OverlapLoss, SolutionLoss
-from solver.ml_solver import MLSolver
-from solver.MIS.greedy_solver import GreedySolver
 
 
 class Trainer():
@@ -117,29 +115,14 @@ class Trainer():
                                   "optimizer_{}.pth".format(self.epoch))
         self.optimizer.load_state_dict(torch.load(optim_path))
 
-    def greedy_based_solution(self, dataset, probs):
-        print("ml solver:")
-        ml_solver = MLSolver()
-        ml_solver.eval(dataset, probs)
-        print("\n\n")
-        print("greedy solver:")
-        greedy_solver = GreedySolver()
-        greedy_solver.eval(dataset, probs)
-
-        return
-
     def test_single_epoch(self, loader):
         # self.network.eval()
         area_losses = []
         collision_losses = []
-        j = 0
         for batch in loader:
             torch.cuda.empty_cache()
             data = batch.to(self.device)
             probs = self.network(x=data.x, col_e_idx=data.edge_index)
-            if self.epoch % 20 == 0 and self.epoch > 0 and j < 10:
-                self.greedy_based_solution(batch, probs.cpu().detach().numpy())
-                j = j + 1
             area_losses.append(self.area_loss(probs, data.x).detach())
             collision_losses.append(
                 self.collision_loss(probs, data.edge_index).detach())
