@@ -1,0 +1,2 @@
+/research/dept8/fyp21/cwf2101/rchuan/working/large_graph/data/silhouette/rabbit22.txt
+/research/dept8/fyp21/cwf2101/rchuan/working/large_graph/data/silhouette/bee.txt
