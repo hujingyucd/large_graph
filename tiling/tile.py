@@ -24,13 +24,13 @@ class Tile:
     def get_plot_attribute(self, style="blue"):
         return (style, np.array(list(self.tile_poly.exterior.coords)))
 
-    def get_edge(self, edge_idx):
+    def get_edge(self, edge_idx: int):
         contour_segments = list(self.tile_poly.exterior.coords)
         contour_edge_p0, contour_edge_p1 = contour_segments[
             edge_idx], contour_segments[edge_idx + 1]
         return np.array(contour_edge_p0), np.array(contour_edge_p1)
 
-    def get_edge_length(self, edge_idx):
+    def get_edge_length(self, edge_idx: int):
         p0, p1 = self.get_edge(edge_idx)
         return _distance(p0, p1)
 
@@ -53,15 +53,3 @@ class Tile:
             accumelate_dist = accumelate_dist + self.get_edge_length(i)
         accumelate_dist = accumelate_dist + edge_shift
         return accumelate_dist / perimeter
-
-
-if __name__ == '__main__':
-    # from util.algo_util import _distance
-    triangle = np.array([[0, 0], [0, 0.9], [1, 0]])
-    triangle2 = np.array([[0, 0], [0, 0.9], [1, 0]])
-    triangle2 = np.array([[0, 0], [0, 0.9], [1, 0]])
-    poly1 = Polygon(triangle)
-    poly2 = Polygon(triangle2)
-    tiles = [Tile(poly1, 1), Tile(poly2, 1)]
-
-    print(tiles)

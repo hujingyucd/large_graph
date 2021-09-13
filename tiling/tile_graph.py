@@ -1,6 +1,7 @@
 # Python3 Program to print BFS traversal
 # from a given source vertex. BFS(int s)
 # traverses vertices reachable from s.
+from typing import List, Tuple, DefaultDict, Any
 from collections import defaultdict
 import numpy as np
 import itertools
@@ -81,23 +82,24 @@ class TileGraph:
     # Constructor
     def __init__(self,
                  tile_type_count: int,
-                 tiles=None,
+                 tiles: List[Tile] = [],
                  one_hot=True,
                  proto_tiles=None):
         # self.plotter = plotter
         # self.debugger = debugger
         # default dictionary to store brick_layouts
-        self.tile_type_count = tile_type_count  # number of different tile types
-        self.tiles = None if tiles is None else tiles
-        self.graph = defaultdict(list)
+        # number of different tile types
+        self.tile_type_count = tile_type_count
+        self.tiles = tiles
+        self.graph: DefaultDict[int, List[int]] = defaultdict(list)
         self.one_hot = one_hot
         # remove duplicated tiles first
-        if tiles is not None:
+        if tiles:
             self.tiles = self._remove_reductant(tiles)
 
-        self.edges_features = defaultdict(list)
-        self.adj_edges = []
-        self.colli_edges = []
+        self.edges_features: DefaultDict[int, List[Any]] = defaultdict(list)
+        self.adj_edges: List[Tuple[int, int]] = []
+        self.colli_edges: List[Tuple[int, int]] = []
         self.align_start_index = 2
         self.max_align_length = 1e-10
 
@@ -108,7 +110,7 @@ class TileGraph:
                 self.unique_adj_features)
 
         # form the complete graph
-        if tiles is not None:
+        if tiles:
             self._form__graph()
             self.max_area = max([t.area() for t in tiles])
 
@@ -169,7 +171,16 @@ class TileGraph:
                             assert len(u) == len(current_edge_feature)
 
                         # ensure both of alignment and reflection do not exist in the list
-                        if not any(np.allclose(np.array(unique_feature), np.array(current_edge_feature), atol=ONE_HOT_EPS) for unique_feature in unique_features) and not any(np.allclose(np.array(unique_feature), np.array(current_reflected_feature), atol=ONE_HOT_EPS) for unique_feature in unique_features) and edge_feature[0] < EPS:
+                        if not any(
+                                np.allclose(np.array(unique_feature),
+                                            np.array(current_edge_feature),
+                                            atol=ONE_HOT_EPS) for
+                                unique_feature in unique_features) and not any(
+                                    np.allclose(
+                                        np.array(unique_feature),
+                                        np.array(current_reflected_feature),
+                                        atol=ONE_HOT_EPS) for unique_feature in
+                                    unique_features) and edge_feature[0] < EPS:
                             unique_features.append(current_edge_feature)
                             assert edge_feature[1] > 0
 
@@ -187,9 +198,9 @@ class TileGraph:
         print("one_hot_cnt: ", len(unique_features))
         return unique_features
 
-    def _remove_reductant(self, tiles):
+    def _remove_reductant(self, tiles: List[Tile]):
         # remove redundant tiles
-        new_tiles = []
+        new_tiles: List[Tile] = []
         for idx, elem in enumerate(tiles):
             assert elem.id <= self.tile_type_count
             if elem not in new_tiles:
@@ -311,7 +322,13 @@ class TileGraph:
                     if one_hot_feature[i] > EPS:
                         selected_features = self.unique_adj_features[
                             i - self.align_start_index]
-                        assert abs(selected_features[0] - input_feature[2]) + abs(selected_features[1] - input_feature[3]) < EPS or abs(selected_features[0] - input_feature[3]) + abs(selected_features[1] - input_feature[2]) < EPS
+                        assert abs(selected_features[0] - input_feature[2]
+                                   ) + abs(selected_features[1] -
+                                           input_feature[3]) < EPS or abs(
+                                               selected_features[0] -
+                                               input_feature[3]) + abs(
+                                                   selected_features[1] -
+                                                   input_feature[2]) < EPS
             if one_hot_feature is None:
                 return
 
@@ -348,17 +365,14 @@ class TileGraph:
 
     def load_graph_state(self, path):
         temp = pickle.load(open(path, "rb"))
-        assert (
-            'tiles' in temp.keys() and
-            'graph' in temp.keys() and
-            'edges_features' in temp.keys() and
-            'colli_edges' in temp.keys() and
-            'adj_edges' in temp.keys() and
-            'unique_adj_features' in temp.keys() and
-            'max_area' in temp.keys() and
-            'max_align_length' in temp.keys() and
-            'align_start_index' in temp.keys()
-        )
+        assert ('tiles' in temp.keys() and 'graph' in temp.keys()
+                and 'edges_features' in temp.keys()
+                and 'colli_edges' in temp.keys()
+                and 'adj_edges' in temp.keys()
+                and 'unique_adj_features' in temp.keys()
+                and 'max_area' in temp.keys()
+                and 'max_align_length' in temp.keys()
+                and 'align_start_index' in temp.keys())
         self.tiles = temp['tiles']
         self.graph = temp['graph']
         self.edges_features = temp['edges_features']
@@ -381,20 +395,3 @@ class TileGraph:
     #     plotter.draw_contours(
     #         debugger.file_path(file_name),
     #         [tile.get_plot_attribute("blue_trans") for tile in self.tiles])
-
-
-if __name__ == '__main__':
-    # Driver code
-
-    # Create a brick_layouts given in
-    # the above diagram
-    g = TileGraph(1)
-    g._addEdge(0, 1)
-    g._addEdge(0, 2)
-    g._addEdge(1, 2)
-    g._addEdge(2, 0)
-    g._addEdge(2, 3)
-    g._addEdge(3, 3)
-
-    print("Following is Breadth First Traversal" " (starting from vertex 2)")
-    g.gen_target_tiles(2)

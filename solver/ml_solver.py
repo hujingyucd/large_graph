@@ -1,5 +1,10 @@
+from typing import Tuple
 import torch
 from copy import deepcopy
+import numpy as np
+
+from utils.solver_util import SelectionSolution
+from utils.solver_util import label_collision_neighbor, create_solution
 
 from solver.MIS.base_solver import BaseSolver
 from solver.ml_core.trainer import Trainer
@@ -8,20 +13,74 @@ from tiling.brick_layout import BrickLayout
 
 class MLSolver(BaseSolver):
     def __init__(self,
-                 device,
-                 network,
-                 num_prob_maps=1,
-                 trainer: Trainer = None):
+                 device: torch.device,
+                 network: torch.nn.Module,
+                 trainer: Trainer,
+                 num_prob_maps: int = 1):
         self.device = device
         # self.complete_graph = complete_graph
         self.network = network
         self.num_prob_maps = num_prob_maps
-        self.trainer: Trainer = trainer
+        self.trainer = trainer
         self.trainer.solver = self
 
     def load_saved_network(self, network_path):
         self.network.load_state_dict(
             torch.load(network_path, map_location=self.device))
+
+    def _solve_by_probablistic_greedy(self, origin_layout: BrickLayout):
+
+        node_num = origin_layout.node_feature.shape[0]
+        collision_edges = origin_layout.collide_edge_index
+
+        # Initial the variables
+        current_solution = SelectionSolution(node_num)
+        round_cnt = 1
+
+        while len(current_solution.unlabelled_nodes) > 0:
+
+            # create layout for currently unselected nodes
+            temp_layout, node_re_index = origin_layout.compute_sub_layout(
+                current_solution)
+            prob = self.predict(temp_layout)
+
+            # compute new probs_value
+            previous_prob = np.array(
+                list(current_solution.unlabelled_nodes.values()))
+            prob_per_node = np.power(
+                np.power(previous_prob, round_cnt - 1) * prob, 1 / round_cnt)
+
+            # update the prob saved
+            for i in range(len(prob_per_node)):
+                current_solution.unlabelled_nodes[
+                    node_re_index[i]] = prob_per_node[i]  # update the prob
+
+            # argsort the prob in descending
+            sorted_indices = np.argsort(-prob_per_node)
+
+            for idx in sorted_indices:
+                origin_idx = node_re_index[idx]
+
+                # collision handling
+                if origin_idx not in current_solution.unlabelled_nodes:
+                    break
+
+                # conditional adding the node
+                var = np.random.uniform()
+                if np.exp((prob_per_node[idx] - 1) * 1.0) > var:
+                    current_solution.label_node(origin_idx, 1, origin_layout)
+                    current_solution = label_collision_neighbor(
+                        collision_edges, current_solution, origin_idx,
+                        origin_layout)
+
+            # update the count
+            round_cnt += 1
+
+        # create bricklayout with prediction
+        score, selection_predict, predict_order = create_solution(
+            current_solution, origin_layout, device=self.device)
+
+        return selection_predict, score, predict_order
 
     def greedy(self, graph):
         # base cases
@@ -54,7 +113,7 @@ class MLSolver(BaseSolver):
         return res2
 
     def predict(self, brick_layout: BrickLayout):
-        predictions = None
+        predictions: torch.Tensor
         if len(brick_layout.collide_edge_index) == 0 or len(
                 brick_layout.align_edge_index) == 0:
             # only collision edges left, select them all
@@ -67,8 +126,8 @@ class MLSolver(BaseSolver):
                 self.device)
 
             # get network prediction
-            predictions: torch.Tensor = self.network(x=x[:, -1].unsqueeze(-1),
-                                                     col_e_idx=coll_e_index)
+            predictions = self.network(x=x[:, -1].unsqueeze(-1),
+                                       col_e_idx=coll_e_index)
 
         # get the minimium loss map
         best_map_index = self.get_best_prob_map(predictions, brick_layout)
@@ -76,7 +135,7 @@ class MLSolver(BaseSolver):
 
         return selected_prob
 
-    def solve(self, brick_layout=None) -> (BrickLayout, float):
+    def solve(self, brick_layout=None) -> Tuple[BrickLayout, float]:
         solution, score, predict_order = self._solve_by_probablistic_greedy(
             brick_layout)
         output_layout = deepcopy(brick_layout)
@@ -92,6 +151,8 @@ class MLSolver(BaseSolver):
         return: of length M
         currently M has to be 1 due to loss implementation
         """
+        if self.trainer is None:
+            raise RuntimeError()
         x, _, _, collide_edge_index, _ = layout.get_data_as_torch_tensor(
             self.device)
         area = x[:, -1].unsqueeze(-1)
@@ -102,7 +163,7 @@ class MLSolver(BaseSolver):
     def get_best_prob_map(self,
                           probs: torch.Tensor,
                           layout: BrickLayout,
-                          top_k_num: int = 1) -> torch.LongTensor:
+                          top_k_num: int = 1):
         """
         probs: of shape N * M, N node num, M prob map num
         return: scalar, or of length top_k_num

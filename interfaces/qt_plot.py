@@ -7,7 +7,7 @@ from PIL import Image
 import sys
 import numpy as np
 import interfaces.figure_config as fig_conf
-from typing import Iterable, Tuple, Union
+from tiling.contour import Contour
 
 
 class Plotter:
@@ -45,17 +45,11 @@ class Plotter:
         # logger.debug(f'Creating polygon with points {points}')
         return QtGui.QPolygonF(points)
 
-    def scaled_polygon(self, contour: np.ndarray) -> QtGui.QPolygonF:
-        # logging.debug(f'Scaling polygon {contour}')
-        return self.create_polygon((contour + self.translation) * self.scaling)
+    # def scaled_polygon(self, contour: np.ndarray) -> QtGui.QPolygonF:
+    #     # logging.debug(f'Scaling polygon {contour}')
+    #     return self.create_polygon((contour + self.translation) * self.scaling)
 
-    def draw_contours(self,
-                      file_path: str,
-                      contours: Iterable[Tuple[Union[str,
-                                                     Tuple[Tuple[float, ...],
-                                                           Tuple[Tuple[float,
-                                                                       ...]]]],
-                                               np.ndarray]]):
+    def draw_contours(self, contours: Contour, file_path: str = None):
         """
         draw the given contours and save to an image file or return
         :param file_path: the path to the image file to save
@@ -155,12 +149,3 @@ def get_polygon_bound(polygons):
     y_min = np.min([min(polygon[:, 1]) for polygon in polygons])
     y_max = np.max([max(polygon[:, 1]) for polygon in polygons])
     return x_max, x_min, y_max, y_min
-
-
-if __name__ == '__main__':
-    plotter = Plotter()
-    for i in range(10):
-        triangle = np.array([[0, 0], [0, 1], [1, 0]])
-        triangle2 = np.array([[0, 0], [0, -1], [1, 0]])
-        plotter.draw_contours("test.png", [('blue', triangle),
-                                           ('lightgreen', triangle2)])

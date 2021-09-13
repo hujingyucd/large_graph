@@ -1,3 +1,4 @@
+from typing import List
 import numpy as np
 
 
@@ -16,7 +17,7 @@ def getSVGShapeAsNp(filename):
     return coords
 
 
-def load_polygons(filename):
+def load_polygons(filename: str):
     '''
     read get contour in shapely
     ASSUME : line 0 -> exterior line 1.... -> interior
@@ -32,7 +33,7 @@ def load_polygons(filename):
                  float(word.split(" ")[1])], exterior_list_word)))
 
     # interior
-    all_interior_coords = []
+    all_interior_coords: List[np.ndarray] = []
     for line in lines[1:]:
         interior_list_word = line.split(",")
         interior_coords = np.array(

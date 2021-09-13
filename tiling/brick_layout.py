@@ -1,4 +1,6 @@
+from typing import List, Union
 import numpy as np
+import torch
 from shapely.ops import unary_union
 import shapely
 from collections import defaultdict
@@ -8,7 +10,6 @@ import matplotlib.pyplot as plt
 
 from interfaces.qt_plot import Plotter
 from tiling.tile_graph import TileGraph
-import utils.data_util as data_util
 from utils.algo_util import interp
 # episolon for area err
 EPS = 1e-5
@@ -19,11 +20,11 @@ SIMPLIFIED_TILE_EPS = BUFFER_TILE_EPS * 1e3
 class BrickLayout():
     def __init__(self,
                  complete_graph: TileGraph,
-                 node_feature,
-                 collide_edge_index,
-                 collide_edge_features,
-                 align_edge_index,
-                 align_edge_features,
+                 node_feature: np.ndarray,
+                 collide_edge_index: np.ndarray,
+                 collide_edge_features: np.ndarray,
+                 align_edge_index: np.ndarray,
+                 align_edge_features: np.ndarray,
                  re_index,
                  target_polygon=None):
         self.complete_graph = complete_graph
@@ -51,8 +52,8 @@ class BrickLayout():
             self.inverse_index[v] = k
 
         self.predict = np.zeros(len(self.node_feature))
-        self.predict_probs = []
-        self.predict_order = []
+        self.predict_probs: Union[List[float], np.ndarray] = []
+        self.predict_order: List[int] = []
         self.target_polygon = target_polygon
 
         # save super poly
@@ -85,11 +86,12 @@ class BrickLayout():
                              file_name,
                              style="blue_trans"):
         tiles = self.complete_graph.tiles
+        assert tiles is not None
         selected_indices = [k for k in self.re_index.keys()]
         selected_tiles = [tiles[s] for s in selected_indices]
         plotter.draw_contours(
-            file_name,
-            [tile.get_plot_attribute(style) for tile in selected_tiles])
+            [tile.get_plot_attribute(style) for tile in selected_tiles],
+            file_path=file_name)
 
     def show_predict(self,
                      plotter: Plotter,
@@ -111,6 +113,7 @@ class BrickLayout():
             super_contour_poly,
             style='lightblue') if do_show_super_contour else ([], [])
         # show selected tiles
+        assert self.complete_graph.tiles is not None
         selected_tiles = [
             self.complete_graph.tiles[
                 self.inverse_index[i]].get_plot_attribute("yellow")
@@ -122,8 +125,9 @@ class BrickLayout():
         print(test.area)
 
         img = plotter.draw_contours(
-            file_name, tiling_region_exteriors + tiling_region_interiors +
-            super_contour_exteriors + super_contour_interiors + selected_tiles)
+            tiling_region_exteriors + tiling_region_interiors +
+            super_contour_exteriors + super_contour_interiors + selected_tiles,
+            file_path=file_name)
         return img
 
     def show_super_contour(self, plotter, file_name):
@@ -220,20 +224,19 @@ class BrickLayout():
         # sort by prob
         sorted_indices = np.argsort(self.predict_probs)
 
-        plotter.draw_contours(
-            file_name, exteriors_contour_list + interiors_list + [
-                self.complete_graph.tiles[
-                    self.inverse_index[i]].get_plot_attribute(
-                        (tuple(
-                            interp(predict_probs[i],
-                                   vec1=min_fill_color,
-                                   vec2=max_fill_color)),
-                         tuple(
-                             interp(predict_probs[i],
-                                    vec1=min_pen_color,
-                                    vec2=max_pen_color))))
-                for i in sorted_indices
-            ])
+        plotter.draw_contours(exteriors_contour_list + interiors_list + [
+            self.complete_graph.tiles[
+                self.inverse_index[i]].get_plot_attribute(
+                    (tuple(
+                        interp(predict_probs[i],
+                               vec1=min_fill_color,
+                               vec2=max_fill_color)),
+                     tuple(
+                         interp(predict_probs[i],
+                                vec1=min_pen_color,
+                                vec2=max_pen_color)))) for i in sorted_indices
+        ],
+                              file_path=file_name)
 
     def get_super_contour_poly(self):
         # return super contour poly if already calculated
@@ -317,8 +320,22 @@ class BrickLayout():
 
         return False
 
+    def _to_torch_tensor(self, device, node_feature, align_edge_index,
+                         align_edge_features, collide_edge_index,
+                         collide_edge_features):
+        x = torch.from_numpy(node_feature).float().to(device)
+        adj_edge_index = torch.from_numpy(align_edge_index).long().to(device)
+        adj_edge_features = torch.from_numpy(align_edge_features).float().to(
+            device)
+        collide_edge_index = torch.from_numpy(collide_edge_index).long().to(
+            device)
+        collide_edge_features = torch.from_numpy(
+            collide_edge_features).float().to(device)
+
+        return x, adj_edge_index, adj_edge_features, collide_edge_index, collide_edge_features
+
     def get_data_as_torch_tensor(self, device):
-        x, adj_edge_index, adj_edge_features, collide_edge_index, collide_edge_features = data_util.to_torch_tensor(
+        x, adj_edge_index, adj_edge_features, collide_edge_index, collide_edge_features = self._to_torch_tensor(
             device, self.node_feature, self.align_edge_index,
             self.align_edge_features, self.collide_edge_index,
             self.collide_edge_features)

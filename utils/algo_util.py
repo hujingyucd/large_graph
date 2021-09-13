@@ -5,12 +5,17 @@ import random
 import glob
 import os
 
+from shapely.geometry import Polygon
 
-# return the rotation matrix and the translation matrix
-# base_segment:[(x1,y1), (x2, y2)] look left is inside of the contour
-# tile_segment:[(x1,y1), (x2, y2)] look left is inside of the tile
+
 def align(base_segment_p0, base_segment_p1, tile_segment_p0, tile_segment_p1,
           mode: int):
+    '''
+    return the rotation matrix and the translation matrix
+    base_segment:[(x1,y1), (x2, y2)] look left is inside of the contour
+    tile_segment:[(x1,y1), (x2, y2)] look left is inside of the tile
+    '''
+
     assert mode == 0 or mode == 1
 
     base_vec = np.array([
@@ -175,7 +180,7 @@ class Replay_Buffer:
         return (states, actions, rewards, next_states, dones)
 
 
-def contain(super_poly, poly):
+def contain(super_poly: Polygon, poly: Polygon) -> bool:
     return abs(super_poly.intersection(poly).area - poly.area) < 1e-6
 
 

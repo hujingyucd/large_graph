@@ -10,31 +10,36 @@ from shapely.ops import unary_union
 from shapely.geometry import Polygon
 import shapely.affinity
 
+from tiling.contour import Contour
+from interfaces.qt_plot import Plotter
 from tiling.tile_graph import TileGraph
 from tiling.brick_layout import BrickLayout
 from utils.algo_util import contain
-from utils.data_util import write_bricklayout, generate_brick_layout_data, load_bricklayout
+from utils.data_util import write_bricklayout
+from utils.data_util import generate_brick_layout_data, load_bricklayout
 
 EPS = 1e-5
 
 
-def compute_super_graph(graph: TileGraph, generated_target):
+def compute_super_graph(graph: TileGraph, generated_target: List[int]):
     assert len(generated_target) > 0
     # select all possible tiles from super brick_layouts
+    assert graph.tiles is not None
     selected_tiles = [
         graph.tiles[s].tile_poly.buffer(1e-6) for s in generated_target
     ]
     total_polygon = unary_union(selected_tiles)
 
     # getting placement inside polygon
-    tiles_super_set, filtered_collided_edges, filtered_adj_edges = get_all_placement_in_polygon(
-        graph, total_polygon)
+    tiles_super_set, filtered_collided_edges, \
+        filtered_adj_edges = get_all_placement_in_polygon(graph, total_polygon)
 
     return tiles_super_set, filtered_collided_edges, filtered_adj_edges
 
 
 def get_all_placement_in_polygon(graph: TileGraph, polygon: Polygon):
     # get all tile placements in the supergraph
+    assert graph.tiles is not None
     tiles_super_set = [
         i for i in range(len(graph.tiles))
         if contain(polygon, graph.tiles[i].tile_poly)
@@ -67,6 +72,7 @@ def create_brick_layout_from_polygon(graph: TileGraph, polygon: Polygon):
 
 
 def get_graph_bound(graph: TileGraph):
+    assert graph.tiles is not None
     tiles = [np.array(t.tile_poly.exterior.coords) for t in graph.tiles]
 
     # getting the bound
@@ -78,12 +84,12 @@ def get_graph_bound(graph: TileGraph):
 
 
 def generate_random_inputs(graph: TileGraph,
-                           max_vertices: float = 10,
+                           max_vertices: int = 10,
                            low=0.2,
                            high=0.7,
-                           plotter=None,
+                           plotter: Plotter = None,
                            root_path=None,
-                           plot_shape=False):
+                           plot_shape: bool = False):
 
     # try until can create
     while True:
@@ -94,7 +100,7 @@ def generate_random_inputs(graph: TileGraph,
             radius_random = random.uniform(low, high)
             irregularity = random.random()
             spikeyness = random.random()
-            number_of_vertices = random.randint(3, max_vertices)
+            number_of_vertices: int = random.randint(3, max_vertices)
 
             # generation of the random polygon
             vertices = generatePolygon(
@@ -105,9 +111,9 @@ def generate_random_inputs(graph: TileGraph,
 
             if plot_shape:
                 assert plotter is not None
-                plotter.draw_contours(
-                    os.path.join(root_path, 'generated_shape.png'),
-                    [('green', np.array(vertices))])
+                plotter.draw_contours([('green', np.array(vertices))],
+                                      file_path=os.path.join(
+                                          root_path, 'generated_shape.png'))
 
             node_feature, collide_edge_index, collide_edge_features, align_edge_index, align_edge_features, re_index = \
                 create_brick_layout_from_polygon(graph, polygon)
@@ -124,7 +130,8 @@ def generate_random_inputs(graph: TileGraph,
             continue
 
 
-def generatePolygon(ctrX, ctrY, aveRadius, irregularity, spikeyness, numVerts):
+def generatePolygon(ctrX, ctrY, aveRadius, irregularity, spikeyness,
+                    numVerts: int):
     '''Start with the centre of the polygon at ctrX, ctrY,
     then creates the polygon by sampling points on a circle around the centre.
     Randon noise is added by varying the angular spacing between sequential points,
@@ -147,14 +154,14 @@ def generatePolygon(ctrX, ctrY, aveRadius, irregularity, spikeyness, numVerts):
     angleSteps = []
     lower = (2 * math.pi / numVerts) - irregularity
     upper = (2 * math.pi / numVerts) + irregularity
-    sum = 0
+    summed = 0.0
     for i in range(numVerts):
         tmp = random.uniform(lower, upper)
         angleSteps.append(tmp)
-        sum = sum + tmp
+        summed = summed + tmp
 
     # normalize the steps so that point 0 and point n+1 are the same
-    k = sum / (2 * math.pi)
+    k = summed / (2 * math.pi)
     for i in range(numVerts):
         angleSteps[i] = angleSteps[i] / k
 
@@ -171,27 +178,28 @@ def generatePolygon(ctrX, ctrY, aveRadius, irregularity, spikeyness, numVerts):
     return points
 
 
-def clip(x, min, max):
-    if (min > max):
+def clip(x, min_value, max_value):
+    if (min_value > max_value):
         return x
-    elif (x < min):
-        return min
-    elif (x > max):
-        return max
+    elif (x < min_value):
+        return min_value
+    elif (x > max_value):
+        return max_value
     else:
         return x
 
 
-def crop_multiple_layouts_from_contour(exterior_contour,
-                                       interior_contours,
-                                       complete_graph,
-                                       start_angle=0.0,
-                                       end_angle=60.0,
-                                       num_of_angle=1,
-                                       movement_delta_ratio=[0],
-                                       margin_padding_ratios=[0.2]):
+def crop_multiple_layouts_from_contour(
+        exterior_contour: Contour,
+        interior_contours: Contour,
+        complete_graph: TileGraph,
+        start_angle: float = 0.0,
+        end_angle: float = 60.0,
+        num_of_angle: int = 1,
+        movement_delta_ratio: List[float] = [0],
+        margin_padding_ratios: List[float] = [0.2]):
     print("cropping from super set...")
-    result_brick_tuples: List[Tuple[BrickLayout, float]]  = []
+    result_brick_tuples: List[Tuple[BrickLayout, float]] = []
 
     tile_movement_delta = get_tile_movement_delta(complete_graph,
                                                   movement_delta_ratio)
@@ -238,18 +246,21 @@ def crop_multiple_layouts_from_contour(exterior_contour,
     return result_brick_tuples
 
 
-def get_tile_movement_delta(complete_graph, movement_delta_ratio):
+def get_tile_movement_delta(complete_graph: TileGraph,
+                            movement_delta_ratio: List[float]):
     # calculate the x-delta and y-delta
+    assert complete_graph.tiles is not None
     tile_bound = complete_graph.tiles[0].tile_poly.bounds
     tile_delta = min((tile_bound[2] - tile_bound[0]),
                      (tile_bound[3] - tile_bound[1]))
-    tile_movement_delta = np.array(movement_delta_ratio) * tile_delta
+    tile_movement_delta: np.ndarray = np.array(
+        movement_delta_ratio) * tile_delta
     return tile_movement_delta
 
 
-def save_all_layout_info(file_prefix,
+def save_all_layout_info(file_prefix: str,
                          result_brick_layout: BrickLayout,
-                         save_path,
+                         save_path: str,
                          with_features=False):
     write_bricklayout(save_path,
                       f'{file_prefix}_data.pkl',
@@ -263,8 +274,9 @@ def save_all_layout_info(file_prefix,
     BrickLayout.assert_equal_layout(reloaded_bricklayout, result_brick_layout)
 
 
-def shape_transform(complete_graph, exterior_contour, interior_contours,
-                    margin_padding_ratio, rotate_angle, x_delta, y_delta):
+def shape_transform(complete_graph: TileGraph, exterior_contour: Contour,
+                    interior_contours: Contour, margin_padding_ratio,
+                    rotate_angle, x_delta, y_delta):
     poly_bound = Polygon(exterior_contour, holes=interior_contours).bounds
     max_axis = max((poly_bound[2] - poly_bound[0]),
                    (poly_bound[3] - poly_bound[1]))

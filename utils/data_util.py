@@ -1,3 +1,4 @@
+from typing import List, Tuple, DefaultDict
 import pickle
 import os
 from collections import defaultdict
@@ -7,6 +8,7 @@ import tiling.brick_layout
 import torch
 
 from tiling.tile_graph import TileGraph
+from tiling.brick_layout import BrickLayout
 
 optional_variables_names = [
     'node_features', 'collide_edge_index', 'collide_edge_features',
@@ -56,11 +58,16 @@ def load_brick_layout_data(save_path):
         else:
             dic[optional_variable_name] = None
 
-    return dic['re_index'], dic['node_features'], dic['collide_edge_index'], dic['collide_edge_features'], dic['align_edge_index'], dic['align_edge_features'], dic['predict'], dic['predict_order'], dic['target_shape'], dic['predict_probs']
+    return dic['re_index'], dic['node_features'], dic[
+        'collide_edge_index'], dic['collide_edge_features'], dic[
+            'align_edge_index'], dic['align_edge_features'], dic[
+                'predict'], dic['predict_order'], dic['target_shape'], dic[
+                    'predict_probs']
 
 
-def load_bricklayout(file_path, complete_graph):
-    re_index, node_features, collide_edge_index, collide_edge_features, align_edge_index, align_edge_features, predict, predict_order, target_polygon, predict_probs = load_brick_layout_data(file_path)
+def load_bricklayout(file_path, complete_graph: TileGraph):
+    re_index, node_features, collide_edge_index, collide_edge_features, align_edge_index, align_edge_features, predict, predict_order, target_polygon, predict_probs = load_brick_layout_data(
+        file_path)
 
     # reconstruct the features if needed
     if node_features is None or collide_edge_index is None or collide_edge_features is None or align_edge_index is None or align_edge_features is None:
@@ -82,10 +89,15 @@ def load_bricklayout(file_path, complete_graph):
     return output_layout
 
 
-def write_bricklayout(folder_path,
-                      file_name,
-                      brick_layout,
-                      with_features=True):
+def write_bricklayout(folder_path: str,
+                      file_name: str,
+                      brick_layout: BrickLayout,
+                      with_features: bool = True):
+    node_features = None
+    collide_edge_index = None
+    collide_edge_features = None
+    align_edge_index = None
+    align_edge_features = None
 
     if with_features:
         node_features = brick_layout.node_feature
@@ -93,12 +105,6 @@ def write_bricklayout(folder_path,
         collide_edge_features = brick_layout.collide_edge_features
         align_edge_index = brick_layout.align_edge_index
         align_edge_features = brick_layout.align_edge_features
-    else:
-        node_features = None
-        collide_edge_index = None
-        collide_edge_features = None
-        align_edge_index = None
-        align_edge_features = None
 
     write_brick_layout_data(save_path=file_name,
                             node_features=node_features,
@@ -112,20 +118,6 @@ def write_bricklayout(folder_path,
                             predict_order=brick_layout.predict_order,
                             target_shape=brick_layout.target_polygon,
                             predict_probs=brick_layout.predict_probs)
-
-
-def to_torch_tensor(device, node_feature, align_edge_index,
-                    align_edge_features, collide_edge_index,
-                    collide_edge_features):
-    x = torch.from_numpy(node_feature).float().to(device)
-    adj_edge_index = torch.from_numpy(align_edge_index).long().to(device)
-    adj_edge_features = torch.from_numpy(align_edge_features).float().to(
-        device)
-    collide_edge_index = torch.from_numpy(collide_edge_index).long().to(device)
-    collide_edge_features = torch.from_numpy(collide_edge_features).float().to(
-        device)
-
-    return x, adj_edge_index, adj_edge_features, collide_edge_index, collide_edge_features
 
 
 def write_tree_search_layout(save_path, temp_layout, node_re_index):
@@ -168,7 +160,8 @@ def recover_features_from_reindex(re_index, complete_graph):
 
 
 def generate_brick_layout_data(graph: TileGraph, super_tiles: list,
-                               collide_edges, adj_edges):
+                               collide_edges: List[Tuple[int, int]],
+                               adj_edges: List[Tuple[int, int]]):
     # edge feature
     super_edge_features_collide = [
         graph.edges_features[edge[0]][edge[1]] for edge in collide_edges
@@ -189,13 +182,14 @@ def generate_brick_layout_data(graph: TileGraph, super_tiles: list,
     # print(super_edge_features)
 
     # re-index: mapping from complete graph to the current super graph
-    re_index = defaultdict(int)
+    re_index: DefaultDict[int, int] = defaultdict(int)
     for i in range(len(super_tiles)):
         re_index[super_tiles[i]] = i
 
     # node feature
     node_feature = np.zeros((len(super_tiles), graph.tile_type_count + 1))
     for i, tile_idx in enumerate(super_tiles):
+        assert graph.tiles is not None
         current_tile = graph.tiles[tile_idx]
         node_feature[i][current_tile.id] = 1
         node_feature[i][-1] = current_tile.area() / graph.max_area
@@ -212,5 +206,6 @@ def generate_brick_layout_data(graph: TileGraph, super_tiles: list,
     # print("Edge index")
     # print(edge_index)
 
-
-    return node_feature, np.array(edge_index_collide).T, np.array(super_edge_features_collide), np.array(edge_index_align).T, np.array(super_edge_features_adj), re_index
+    return node_feature, np.array(edge_index_collide).T, np.array(
+        super_edge_features_collide), np.array(edge_index_align).T, np.array(
+            super_edge_features_adj), re_index

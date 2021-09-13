@@ -268,19 +268,26 @@ class Trainer():
             self.logger.info("model saved at epoch {}".format(i))
 
     # solve and visualize
-    def evaluate(self, plotter: Plotter, complete_graph: TileGraph,
-                 solver: BaseSolver, split: str):
-
+    def evaluate(self,
+                 plotter: Plotter = None,
+                 complete_graph: TileGraph = None,
+                 solver: BaseSolver = None,
+                 split: str = "train"):
+        if not all([plotter, solver, complete_graph]):
+            self.logger.warning("no solving and visualization")
+            return
         data = next(iter(getattr(self, "loader_" + split))).to(self.device)
         processed_path = str(data.path[0])
         raw_path = os.path.splitext("raw".join(
             processed_path.rsplit('processed', 1)))[0] + '.pkl'
+        assert complete_graph is not None
         queried_layout = load_bricklayout(raw_path, complete_graph)
+        assert solver is not None
         result_layout, score = solver.solve_with_trials(queried_layout, 3)
 
         self.writer.add_scalar("Score/" + split, score, self.epoch)
-
         result_layout.predict_probs = result_layout.predict
+        assert plotter is not None
         img = result_layout.show_predict(plotter, None, True, True)
         self.writer.add_image(split + "/" + str(data.idx.item()),
                               img,
@@ -294,8 +301,7 @@ class Trainer():
         self.logger.info("training start")
         while self.epoch < self.total_train_epoch:
             self.train_single_epoch(plotter, solver, complete_graph)
-            if all([plotter, solver, complete_graph]):
-                self.evaluate(plotter, complete_graph, solver, "train")
-                self.evaluate(plotter, complete_graph, solver, "test")
+            self.evaluate(plotter, complete_graph, solver, "train")
+            self.evaluate(plotter, complete_graph, solver, "test")
             self.epoch += 1
         self.logger.info("training done\n\n")

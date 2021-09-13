@@ -34,9 +34,9 @@ def tile_silhouette_list(solver: BaseSolver, tile_count: int,
 def tiling_a_region(plotter: Plotter,
                     complete_graph: TileGraph,
                     solver: BaseSolver,
-                    silhouette_path,
-                    root_path,
-                    logger_name="TILING"):
+                    silhouette_path: str,
+                    root_path: str,
+                    logger_name: str = "TILING"):
     # environment.complete_graph.show_complete_super_graph(
     #     plotter, "complete_graph.png")
     cropped_brick_layouts: List[Tuple[BrickLayout, float]]

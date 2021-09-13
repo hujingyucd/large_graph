@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import torch
 import shapely
 from shapely.geometry import Polygon
 from collections import OrderedDict
@@ -81,7 +82,8 @@ def label_collision_neighbor(collision_edges, new_predict, origin_idx,
     return new_predict
 
 
-def create_solution(new_predict, origin_layout: BrickLayout, device):
+def create_solution(new_predict, origin_layout: BrickLayout,
+                    device: torch.device):
     # calculate the score
     temp_sol = np.zeros(origin_layout.node_feature.shape[0])
     order_predict = []
