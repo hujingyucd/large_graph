@@ -22,5 +22,11 @@
         "depth": 10,
         "width": 32,
         "output_dim": 1
+    },
+    "tiling": {
+        "complete_graph_path": "/research/dept8/fyp21/cwf2101/data/complete_graph/L3+long_tile/complete_graph_ring10.pkl",
+        "tile_count": 2,
+        "silhouette_list": "/research/dept8/fyp21/cwf2101/rchuan/working/large_graph/configs/silhouette_list_0.txt"
     }
+
 }

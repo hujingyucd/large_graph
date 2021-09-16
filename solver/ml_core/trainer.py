@@ -35,6 +35,8 @@ class Trainer():
         self.network = network
         self.optimizer = optimizer
 
+        self.dataset_train = dataset_train
+        self.dataset_test = dataset_test
         self.loader_train = DataLoader(dataset_train,
                                        batch_size=1,
                                        shuffle=True)
@@ -272,12 +274,13 @@ class Trainer():
                  plotter: Plotter = None,
                  complete_graph: TileGraph = None,
                  solver: BaseSolver = None,
-                 split: str = "train"):
+                 split: str = "train",
+                 idx: int = 0):
         if not all([plotter, solver, complete_graph]):
             self.logger.warning("no solving and visualization")
             return
-        data = next(iter(getattr(self, "loader_" + split))).to(self.device)
-        processed_path = str(data.path[0])
+        data = getattr(self, "dataset_" + split)[idx].to(self.device)
+        processed_path = str(data.path)
         raw_path = os.path.splitext("raw".join(
             processed_path.rsplit('processed', 1)))[0] + '.pkl'
         assert complete_graph is not None
@@ -286,10 +289,11 @@ class Trainer():
         result_layout, score = solver.solve_with_trials(queried_layout, 3)
 
         self.writer.add_scalar("Score/" + split, score, self.epoch)
+        # self.logger.info("score {} {} {}".format(split, score, self.epoch))
         result_layout.predict_probs = result_layout.predict
         assert plotter is not None
         img = result_layout.show_predict(plotter, None, True, True)
-        self.writer.add_image(split + "/" + str(data.idx.item()),
+        self.writer.add_image(split + "/" + str(data.idx),
                               img,
                               self.epoch,
                               dataformats='HWC')

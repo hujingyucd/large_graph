@@ -22,7 +22,8 @@ class MLSolver(BaseSolver):
         self.network = network
         self.num_prob_maps = num_prob_maps
         self.trainer = trainer
-        self.trainer.solver = self
+        if trainer:
+            self.trainer.solver = self
 
     def load_saved_network(self, network_path):
         self.network.load_state_dict(
