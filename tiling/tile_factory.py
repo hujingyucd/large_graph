@@ -10,7 +10,6 @@ from shapely.ops import unary_union
 from shapely.geometry import Polygon
 import shapely.affinity
 
-from tiling.contour import Contour
 from interfaces.qt_plot import Plotter
 from tiling.tile_graph import TileGraph
 from tiling.brick_layout import BrickLayout
@@ -190,8 +189,8 @@ def clip(x, min_value, max_value):
 
 
 def crop_multiple_layouts_from_contour(
-        exterior_contour: Contour,
-        interior_contours: Contour,
+        exterior_contour: np.ndarray,
+        interior_contours: List[np.ndarray],
         complete_graph: TileGraph,
         start_angle: float = 0.0,
         end_angle: float = 60.0,
@@ -274,8 +273,8 @@ def save_all_layout_info(file_prefix: str,
     BrickLayout.assert_equal_layout(reloaded_bricklayout, result_brick_layout)
 
 
-def shape_transform(complete_graph: TileGraph, exterior_contour: Contour,
-                    interior_contours: Contour, margin_padding_ratio,
+def shape_transform(complete_graph: TileGraph, exterior_contour: np.ndarray,
+                    interior_contours: List[np.ndarray], margin_padding_ratio,
                     rotate_angle, x_delta, y_delta):
     poly_bound = Polygon(exterior_contour, holes=interior_contours).bounds
     max_axis = max((poly_bound[2] - poly_bound[0]),

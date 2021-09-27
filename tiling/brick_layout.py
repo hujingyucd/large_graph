@@ -130,12 +130,11 @@ class BrickLayout():
             file_path=file_name)
         return img
 
-    def show_super_contour(self, plotter, file_name):
+    def show_super_contour(self, plotter: Plotter, file_name):
         super_contour_poly = self.get_super_contour_poly()
         exteriors_contour_list, interiors_list = BrickLayout.get_polygon_plot_attr(
             super_contour_poly, show_line=True)
-        plotter.draw_contours(file_name,
-                              exteriors_contour_list + interiors_list)
+        plotter.draw_contours(exteriors_contour_list + interiors_list, file_name)
 
     def show_adjacency_graph(self,
                              save_path,

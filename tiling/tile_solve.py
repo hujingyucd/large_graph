@@ -58,7 +58,7 @@ def get_cropped_layouts(complete_graph, silhouette_path):
             end_angle=30,
             num_of_angle=1,
             movement_delta_ratio=[0, 0.5],
-            margin_padding_ratios=[0.5])
+            margin_padding_ratios=[0.8])
 
         pickle.dump(cropped_brick_layouts, open(pre_generated_path, 'wb'))
     return cropped_brick_layouts
@@ -74,6 +74,7 @@ def tiling_a_region(plotter: Plotter,
     #     plotter, "complete_graph.png")
     cropped_brick_layouts = get_cropped_layouts(
         complete_graph=complete_graph, silhouette_path=silhouette_path)
+    print(len(cropped_brick_layouts))
     # show the cropped tile placements
     # for idx, (brick_layout, coverage) in enumerate(cropped_brick_layouts):
     #     brick_layout.show_candidate_tiles(
@@ -90,7 +91,7 @@ def tiling_a_region(plotter: Plotter,
 
         # find best solution in 20 trials
         result_brick_layout, score = solver.solve_with_trials(
-            queried_brick_layout, 3)
+            queried_brick_layout, 1)
         solutions.append((result_brick_layout, score))
 
     # show solved layout
@@ -127,9 +128,9 @@ def tiling_a_region(plotter: Plotter,
             do_show_tiling_region=True)
         # result_brick_layout.show_super_contour(
         #     plotter, os.path.join(root_path,
-        #                           f'{score}_{idx}_super_contour.png'))
+        #                           f'{name}_{score}_{idx}_super_contour.png'))
         # result_brick_layout.show_adjacency_graph(
-        #     os.path.join(root_path, f'{score}_{idx}_vis_graph.png'))
+        #     os.path.join(root_path, f'{name}_{score}_{idx}_vis_graph.png'))
         # result_brick_layout.show_predict_prob(
         #     plotter,
         #     os.path.join(root_path, f'{name}_{score}_{idx}_prob.png'))
