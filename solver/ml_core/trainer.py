@@ -3,9 +3,12 @@ import sys
 import logging
 import torch
 from torch_geometric.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
 from solver.ml_core.losses import AreaLoss, OverlapLoss, SolutionLoss
-from solver.ml_solver import MLSolver
-from solver.MIS.greedy_solver import GreedySolver
+from solver.MIS.base_solver import BaseSolver
+from utils.data_util import load_bricklayout
+from tiling.tile_graph import TileGraph
+from interfaces.qt_plot import Plotter
 
 
 class Trainer():
@@ -16,7 +19,7 @@ class Trainer():
                  device,
                  model_save_path,
                  optimizer,
-                 writer,
+                 writer: SummaryWriter,
                  logger_name="trainer",
                  loss_weights=None,
                  sample_per_epoch=0,
@@ -32,6 +35,8 @@ class Trainer():
         self.network = network
         self.optimizer = optimizer
 
+        self.dataset_train = dataset_train
+        self.dataset_test = dataset_test
         self.loader_train = DataLoader(dataset_train,
                                        batch_size=1,
                                        shuffle=True)
@@ -71,6 +76,14 @@ class Trainer():
 
         if resume is True:
             self.load()
+
+    @property
+    def solver(self):
+        return self._solver
+
+    @solver.setter
+    def solver(self, solver: BaseSolver):
+        self._solver = solver
 
     def save(self, prefix=""):
         try:
@@ -117,29 +130,27 @@ class Trainer():
                                   "optimizer_{}.pth".format(self.epoch))
         self.optimizer.load_state_dict(torch.load(optim_path))
 
-    def greedy_based_solution(self, dataset, probs):
-        print("ml solver:")
-        ml_solver = MLSolver()
-        ml_solver.eval(dataset, probs)
-        print("\n\n")
-        print("greedy solver:")
-        greedy_solver = GreedySolver()
-        greedy_solver.eval(dataset, probs)
-
-        return
+    def calculate_unsupervised_losses(
+            self, probs: torch.Tensor, area: torch.Tensor,
+            collide_edge_index: torch.Tensor) -> (torch.Tensor):
+        """
+        probs: of shape N * M, N node num, M prob map num
+        area: of shape N * 1
+        collide_edge_index: of shape 2 * E
+        currently M has to be 1 due to loss implementation
+        """
+        result = self.area_loss(probs, area) * self.collision_loss(
+            probs, collide_edge_index)
+        return result.unsqueeze(0)
 
     def test_single_epoch(self, loader):
         # self.network.eval()
         area_losses = []
         collision_losses = []
-        j = 0
         for batch in loader:
             torch.cuda.empty_cache()
             data = batch.to(self.device)
             probs = self.network(x=data.x, col_e_idx=data.edge_index)
-            if self.epoch % 20 == 0 and self.epoch > 0 and j < 10:
-                self.greedy_based_solution(batch, probs.cpu().detach().numpy())
-                j = j + 1
             area_losses.append(self.area_loss(probs, data.x).detach())
             collision_losses.append(
                 self.collision_loss(probs, data.edge_index).detach())
@@ -149,7 +160,10 @@ class Trainer():
         return torch.mean(losses), torch.mean(area_losses), torch.mean(
             collision_losses)
 
-    def train_single_epoch(self):
+    def train_single_epoch(self,
+                           plotter: Plotter = None,
+                           solver: BaseSolver = None,
+                           complete_graph: TileGraph = None):
         self.logger.info("training epoch start")
         torch.cuda.empty_cache()
         i = self.epoch
@@ -255,9 +269,43 @@ class Trainer():
             self.save()
             self.logger.info("model saved at epoch {}".format(i))
 
-    def train(self):
+    # solve and visualize
+    def evaluate(self,
+                 plotter: Plotter = None,
+                 complete_graph: TileGraph = None,
+                 solver: BaseSolver = None,
+                 split: str = "train",
+                 idx: int = 0):
+        if not all([plotter, solver, complete_graph]):
+            self.logger.warning("no solving and visualization")
+            return
+        data = getattr(self, "dataset_" + split)[idx].to(self.device)
+        processed_path = str(data.path)
+        raw_path = os.path.splitext("raw".join(
+            processed_path.rsplit('processed', 1)))[0] + '.pkl'
+        assert complete_graph is not None
+        queried_layout = load_bricklayout(raw_path, complete_graph)
+        assert solver is not None
+        result_layout, score = solver.solve_with_trials(queried_layout, 3)
+
+        self.writer.add_scalar("Score/" + split, score, self.epoch)
+        # self.logger.info("score {} {} {}".format(split, score, self.epoch))
+        result_layout.predict_probs = result_layout.predict
+        assert plotter is not None
+        img = result_layout.show_predict(plotter, None, True, True)
+        self.writer.add_image(split + "/" + str(data.idx),
+                              img,
+                              self.epoch,
+                              dataformats='HWC')
+
+    def train(self,
+              plotter: Plotter = None,
+              solver: BaseSolver = None,
+              complete_graph: TileGraph = None):
         self.logger.info("training start")
         while self.epoch < self.total_train_epoch:
-            self.train_single_epoch()
+            self.train_single_epoch(plotter, solver, complete_graph)
+            self.evaluate(plotter, complete_graph, solver, "train")
+            self.evaluate(plotter, complete_graph, solver, "test")
             self.epoch += 1
         self.logger.info("training done\n\n")

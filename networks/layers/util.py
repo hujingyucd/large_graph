@@ -24,7 +24,12 @@ class MLP(nn.Module):
         self.mlp = Sequential(*layers)
 
     def forward(self, x):
-        assert x.shape[-1] == self.in_dim
+        try:
+            assert x.shape[-1] == self.in_dim
+        except AssertionError as e:
+            print(e)
+            print(x.shape, self.in_dim)
+            raise e
         return self.mlp(x)
 
 

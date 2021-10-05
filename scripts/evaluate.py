@@ -33,8 +33,6 @@ if __name__ == "__main__":
     vdisplay = Xvfb()
     vdisplay.start()
 
-    from solver.ml_core.trainer import Trainer
-    from solver.ml_core.datasets import TileGraphDataset
     from networks.pseudo_tilingnn import PseudoTilinGNN as Gnn
 
     Path(config["training"]["log_dir"]).mkdir(parents=True, exist_ok=True)
@@ -60,47 +58,47 @@ if __name__ == "__main__":
     # gnn = nn.DataParallel(gnn,device_ids=[0,2,3])
 
     data_path = config["training"]["data_path"]
-    dataset_train = TileGraphDataset(root=data_path,
-                                     split="train",
-                                     subgraph_num=4000)
-    dataset_test = TileGraphDataset(root=data_path,
-                                    split="test",
-                                    subgraph_num=800)
 
-    optimizer = torch.optim.Adam(gnn.parameters(),
-                                 eps=1e-4,
-                                 lr=config["training"]["optimizer"]["lr"])
+    from solver.ml_solver import MLSolver
+    from tiling.tile_graph import TileGraph
+    from solver.ml_core.trainer import Trainer
 
     writer = SummaryWriter(log_dir=config["training"]["log_dir"])
 
-    trainer_logger = logging.getLogger("trainer")
-
     trainer = Trainer(
         gnn,
-        dataset_train=dataset_train,
-        dataset_test=dataset_test,
+        dataset_train=["", None],
+        dataset_test=["", None],
         device=device,
         model_save_path=config["training"]["model_save_path"],
-        optimizer=optimizer,
+        optimizer=None,
         writer=writer,
         logger_name="TRAINER",
         loss_weights=config["training"]["loss"],
         sample_per_epoch=config["training"]["sample_per_epoch"],
         sample_method=config["training"]["sample_method"],
         total_train_epoch=config["training"]["total_train_epoch"],
-        save_model_per_epoch=config["training"]["save_model_per_epoch"])
-
-    from solver.ml_solver import MLSolver
-    from interfaces.qt_plot import Plotter
-    from tiling.tile_graph import TileGraph
+        save_model_per_epoch=config["training"]["save_model_per_epoch"],
+        resume=False)
 
     solver = MLSolver(device=device, network=gnn, trainer=trainer)
+
+    data_dict = torch.load(
+        os.path.join(config["training"]["model_save_path"], "latest.pth"))
+    epoch = data_dict["epoch"]
+    solver.load_saved_network(
+        os.path.join(config["training"]["model_save_path"],
+                     "model_{}.pth".format(epoch)))
 
     complete_graph = TileGraph(config['tiling']['tile_count'])
     complete_graph.load_graph_state(config['tiling']['complete_graph_path'])
 
-    trainer.train(plotter=Plotter(),
-                  solver=solver,
-                  complete_graph=complete_graph)
+    from tiling.tile_solve import tile_silhouette_list
+
+    tile_silhouette_list(
+        solver=solver,
+        complete_graph=complete_graph,
+        silhouette_list=config["tiling"]["silhouette_list"],
+        root_path=config["training"]["log_dir"])
 
     vdisplay.stop()

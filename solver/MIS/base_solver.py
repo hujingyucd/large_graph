@@ -1,13 +1,12 @@
+from typing import Tuple
 from abc import ABC, abstractmethod
+from copy import deepcopy
 from torch_geometric.data import Dataset
-from torch_geometric.datasets import KarateClub
-from torch_geometric.utils import to_networkx
-import random
-
-# Helper function for visualization.
 import torch
 import networkx as nx
 import matplotlib.pyplot as plt
+
+from tiling.brick_layout import BrickLayout
 
 
 def visualize(h, color, epoch=None, loss=None):
@@ -35,7 +34,8 @@ def visualize(h, color, epoch=None, loss=None):
 class BaseSolver(ABC):
     """This class is an abstract base class(ABC) for Solvers
 
-        To create a subclass, you need to implement the following four functions:
+        To create a subclass,
+        you need to implement the following four functions:
         --<__init__>: initilize the class,
         --<eval>: Given the solutions, output the algorithm's performance
         --<solve>: Given the input data and algorithms, output the solutions
@@ -47,25 +47,30 @@ class BaseSolver(ABC):
         self.probs = None
 
     @abstractmethod
-    def solve(self):
+    def predict(self, brick_layout: BrickLayout) -> (torch.Tensor):
+        pass
+
+    @abstractmethod
+    def solve(self, brick_layout: BrickLayout) -> Tuple[BrickLayout, float]:
         """
         For MIS Problem:
-            Given the input, return the solutions(list of index of selected nodes, the size of the graph)
+            Given the input, return the solutions
+            (list of index of selected nodes, the size of the graph)
         """
         pass
 
     def metric(self):
         """
         TODO:For MIS Problem:
-            Given the solutions, compute the evaluate result.(the size of the IS/the size of the graph)
+            Given the solutions, compute the evaluate result.
+            (the size of the IS/the size of the graph)
         """
         # print("MIS: ", end="")
         # print(self.solution)
         print("Size of the IS: ", end="")
         print(len(self.solution))
-        print(
-            f'Given the solutions, compute the performance metrics:  {len(self.solution) / self.G.num_nodes:.2f}'
-        )
+        print('Given the solutions, compute the performance metrics: ' +
+              f'{len(self.solution) / self.G.num_nodes:.2f}')
 
         # m = torch.zeros([self.G.num_nodes])
         # for i in range(self.G.num_nodes):
@@ -77,31 +82,41 @@ class BaseSolver(ABC):
     def eval(self, dataset: Dataset, probs=None):
         """
         TODO:For MIS Problem:
-            Given the input data, compute the corresponding solutions and evaluate result
+            Given the input data,
+            compute the corresponding solutions and evaluate result
         """
-        # Get the first graph object as input graph.
-        data = dataset[0]
-        self.G = data
-        self.probs = probs
+        # # Get the first graph object as input graph.
+        # data = dataset[0]
+        # self.G = data
+        # self.probs = probs
 
-        print("The input graph is:")
-        print(data)
-        print('=============================================================')
-        print(f'Number of nodes: {data.num_nodes}')
-        print(f'Number of edges: {data.num_edges}')
-        print(f'Average node degree: {data.num_edges / data.num_nodes:.2f}')
-        # print(f'Number of training nodes: {data.train_mask.sum()}')
-        # print(
-        #     f'Training node label rate: {int(data.train_mask.sum()) / data.num_nodes:.2f}'
-        # )
-        # print(f'Contains isolated nodes: {data.contains_isolated_nodes()}')
-        # print(f'Contains self-loops: {data.contains_self_loops()}')
-        # print(f'Is undirected: {data.is_undirected()}')
-        # print()
-        '''
-        # visualize the input graph
-        G = to_networkx(data, to_undirected=True)
-        m = torch.zeros([data.num_nodes])
-        visualize(G, color=m)
-        '''
-        self.solve()
+        # print("The input graph is:")
+        # print(data)
+        # print('=============================================================')
+        # print(f'Number of nodes: {data.num_nodes}')
+        # print(f'Number of edges: {data.num_edges}')
+        # print(f'Average node degree: {data.num_edges / data.num_nodes:.2f}')
+        # '''
+        # # visualize the input graph
+        # G = to_networkx(data, to_undirected=True)
+        # m = torch.zeros([data.num_nodes])
+        # visualize(G, color=m)
+        # '''
+        # self.solve()
+
+    def solve_with_trials(self, brick_layout: BrickLayout,
+                          trial_times: int) -> Tuple[BrickLayout, float]:
+        current_max_score = 0.0
+        current_best_solution = None
+
+        for i in range(trial_times):
+            result_brick_layout, score = self.solve(brick_layout)
+
+            if score != 0:
+                if current_max_score < score:
+                    current_max_score = score
+                    current_best_solution = deepcopy(result_brick_layout)
+                    print(f"current_max_score : {current_max_score}")
+
+        assert current_best_solution is not None
+        return current_best_solution, current_max_score

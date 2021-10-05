@@ -214,6 +214,7 @@ class TileGraphDataset(Dataset):
 
     def download(self):
         self.logger.error("please generate tile graph data first")
+        raise FileNotFoundError("tile graph data not found")
 
     def process(self):
         self.logger.info("processing the data...")
@@ -255,11 +256,18 @@ class TileGraphDataset(Dataset):
                 self.logger.error("{} {}".format(str(e), raw_path))
 
     def get(self, idx):
+        data_path = os.path.join(self.processed_dir, self.split,
+                                 'data_{}.pt'.format(idx))
         try:
-            data = torch.load(
-                os.path.join(self.processed_dir, self.split,
-                             'data_{}.pt'.format(idx)))
+            data = torch.load(data_path)
             data.idx = idx
+            data.path = data_path
+
         except FileNotFoundError:
-            data = self.get(0)
+            if idx != 0:
+                self.logger.warning(
+                    "data {} not found, using idx 0 instead".format(idx))
+                data = self.get(0)
+            else:
+                raise FileNotFoundError("data 0 not found")
         return data

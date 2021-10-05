@@ -1,10 +1,12 @@
+from typing import Tuple, List
 import random
 import torch
 from torch_geometric.data import Data
 
 
 def sample_solution_greedy(
-        graph: Data, priority: torch.Tensor) -> (torch.LongTensor, torch.bool):
+        graph: Data,
+        priority: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
     """
     Greedily generate maximal independent set with given priority.
     graph: torch_geometric Data object
@@ -17,7 +19,7 @@ def sample_solution_greedy(
     output = torch.full_like(indices, fill_value=False, dtype=torch.bool)
     mark = torch.full_like(indices, fill_value=False, dtype=torch.bool)
 
-    adj_list = [[] for _ in indices]
+    adj_list: List[List[int]] = [[] for _ in indices]
     for i, j in torch.transpose(graph.edge_index, 0, 1).tolist():
         adj_list[i].append(j)
         adj_list[j].append(i)
@@ -48,7 +50,7 @@ def generate_bernoulli(prob=0.9):
         output = torch.full_like(indices, fill_value=False, dtype=torch.bool)
         mark = torch.full_like(indices, fill_value=False, dtype=torch.bool)
 
-        adj_list = [[] for _ in indices]
+        adj_list: List[List[int]] = [[] for _ in indices]
         for i, j in torch.transpose(graph.edge_index, 0, 1).tolist():
             adj_list[i].append(j)
             adj_list[j].append(i)

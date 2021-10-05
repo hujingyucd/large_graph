@@ -91,16 +91,20 @@ if __name__ == "__main__":
         save_model_per_epoch=config["training"]["save_model_per_epoch"])
 
     from solver.ml_solver import MLSolver
-    from interfaces.qt_plot import Plotter
     from tiling.tile_graph import TileGraph
+    from tiling.tile_solve import tile_silhouette_list
 
     solver = MLSolver(device=device, network=gnn, trainer=trainer)
 
     complete_graph = TileGraph(config['tiling']['tile_count'])
     complete_graph.load_graph_state(config['tiling']['complete_graph_path'])
+    tile_silhouette_list(solver,
+                         complete_graph,
+                         silhouette_list="./configs/silhouette_list.txt",
+                         root_path="./results/output")
 
-    trainer.train(plotter=Plotter(),
-                  solver=solver,
-                  complete_graph=complete_graph)
+    # trainer.train(plotter=Plotter(),
+    #               solver=solver,
+    #               complete_graph=complete_graph)
 
     vdisplay.stop()
