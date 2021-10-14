@@ -137,6 +137,7 @@ class MLSolver(BaseSolver):
         return selected_prob
 
     def solve(self, brick_layout=None) -> Tuple[BrickLayout, float]:
+        self.network.eval()
         solution, score, predict_order = self._solve_by_probablistic_greedy(
             brick_layout)
         output_layout = deepcopy(brick_layout)

@@ -98,10 +98,12 @@ if __name__ == "__main__":
 
     complete_graph = TileGraph(config['tiling']['tile_count'])
     complete_graph.load_graph_state(config['tiling']['complete_graph_path'])
-    tile_silhouette_list(solver,
-                         complete_graph,
-                         silhouette_list="./configs/silhouette_list.txt",
-                         root_path="./results/output")
+    tile_silhouette_list(
+        solver,
+        complete_graph,
+        silhouette_list=config["tiling"]["silhouette_list"],
+        save_path=config["training"]["log_dir"],
+        cropped_layouts_dir=config["tiling"]["cropped_layouts_dir"])
 
     # trainer.train(plotter=Plotter(),
     #               solver=solver,

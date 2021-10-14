@@ -2,7 +2,7 @@ import os
 import sys
 import logging
 import torch
-from torch_geometric.data import DataLoader
+from torch_geometric.loader import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from solver.ml_core.losses import AreaLoss, OverlapLoss, SolutionLoss
 from solver.MIS.base_solver import BaseSolver

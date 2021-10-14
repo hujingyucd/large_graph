@@ -1,4 +1,5 @@
 from typing import List, Union
+from functools import reduce
 import numpy as np
 import torch
 from shapely.ops import unary_union
@@ -134,7 +135,8 @@ class BrickLayout():
         super_contour_poly = self.get_super_contour_poly()
         exteriors_contour_list, interiors_list = BrickLayout.get_polygon_plot_attr(
             super_contour_poly, show_line=True)
-        plotter.draw_contours(exteriors_contour_list + interiors_list, file_name)
+        plotter.draw_contours(exteriors_contour_list + interiors_list,
+                              file_name)
 
     def show_adjacency_graph(self,
                              save_path,
@@ -341,6 +343,7 @@ class BrickLayout():
 
         return x, adj_edge_index, adj_edge_features, collide_edge_index, collide_edge_features
 
+
     def compute_sub_layout(self, predict):
         assert len(self.node_feature) == len(predict.labelled_nodes) + len(
             predict.unlabelled_nodes)
@@ -348,48 +351,52 @@ class BrickLayout():
                              key=lambda x: x[0])
         predict.unlabelled_nodes.clear()
         predict.unlabelled_nodes.update(sorted_dict)
+
+        node_mask = torch.zeros(self.node_feature.shape[0], dtype=torch.bool)
+        node_mask[torch.tensor(list(predict.unlabelled_nodes.keys()),
+                               dtype=torch.long)] = True
         # compute index mapping from original index to current index
-        node_re_index = {}
-        for idx, key in enumerate(predict.unlabelled_nodes):
-            node_re_index[key] = idx
+
+        node_re_index = torch.zeros(self.node_feature.shape[0],
+                                    dtype=torch.long)
+        node_re_index[node_mask] = torch.arange(len(node_re_index[node_mask]))
+
+        # node_re_index = {}
+        # for idx, key in enumerate(predict.unlabelled_nodes):
+        #     node_re_index[key] = idx
 
         complete_graph = self.complete_graph
         node_feature = self.node_feature[list(predict.unlabelled_nodes.keys())]
 
         # index
-        collide_edge_index = [
-            [
-                node_re_index[self.collide_edge_index[0, i]],
-                node_re_index[self.collide_edge_index[1, i]]
-            ] for i in range(self.collide_edge_index.shape[1])
-            if self.collide_edge_index[0, i] in predict.unlabelled_nodes
-            and self.collide_edge_index[1, i] in predict.unlabelled_nodes
-        ] if self.collide_edge_index.shape[0] > 0 else np.array([])
-        collide_edge_index = np.array(collide_edge_index).T
+        ori_coll_edges = torch.tensor(self.collide_edge_index)
+        new_coll_mask = reduce(torch.logical_and, node_mask[ori_coll_edges])
+        new_coll_edges = ori_coll_edges[:, new_coll_mask]
 
-        align_edge_index = [
-            [
-                node_re_index[self.align_edge_index[0, i]],
-                node_re_index[self.align_edge_index[1, i]]
-            ] for i in range(self.align_edge_index.shape[1])
-            if self.align_edge_index[0, i] in predict.unlabelled_nodes
-            and self.align_edge_index[1, i] in predict.unlabelled_nodes
-        ] if self.align_edge_index.shape[0] > 0 else np.array([])
-        align_edge_index = np.array(align_edge_index).T
+        collide_edge_index = node_re_index[new_coll_edges].cpu().numpy()
+
+        ori_align_edges = torch.tensor(self.align_edge_index)
+        new_align_mask = reduce(torch.logical_and, node_mask[ori_align_edges])
+        new_align_edges = ori_align_edges[:, new_align_mask]
+
+        align_edge_index = node_re_index[new_align_edges].cpu().numpy()
 
         # feature
-        collide_edge_features = np.array([
-            self.collide_edge_features[i, :]
-            for i in range(self.collide_edge_index.shape[1])
-            if self.collide_edge_index[0, i] in predict.unlabelled_nodes
-            and self.collide_edge_index[1, i] in predict.unlabelled_nodes
-        ]) if self.collide_edge_features.shape[0] > 0 else np.array([])
-        align_edge_features = np.array([
-            self.align_edge_features[i, :]
-            for i in range(self.align_edge_index.shape[1])
-            if self.align_edge_index[0, i] in predict.unlabelled_nodes
-            and self.align_edge_index[1, i] in predict.unlabelled_nodes
-        ]) if self.align_edge_features.shape[0] > 0 else np.array([])
+        collide_edge_features = torch.tensor(
+            self.collide_edge_features)[new_coll_mask, :].cpu().numpy()
+        align_edge_features = torch.tensor(
+            self.align_edge_features)[new_align_mask, :].cpu().numpy()
+
+        if collide_edge_index.shape[1] == 0:
+            collide_edge_index = np.array([])
+            collide_edge_features = np.array([])
+        if align_edge_index.shape[1] == 0:
+            align_edge_index = np.array([])
+            align_edge_features = np.array([])
+
+        # print(node_feature.shape, collide_edge_index.shape,
+        #       collide_edge_features.shape, align_edge_index.shape,
+        #       align_edge_features.shape)
 
         # compute index mapping from current index to original index
         node_inverse_index = {}
