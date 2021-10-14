@@ -76,7 +76,7 @@ def get_cropped_layouts(complete_graph: TileGraph,
                 save_all_layout_info("{}_{}".format(silhouette_name, i),
                                      layout, cropped_layouts_dir, True)
             with open(info_path, 'w') as f:
-                f.write("layout_number: {}".format(1))
+                f.write("layout_number: {}".format(len(cropped_brick_layouts))
     else:
         cropped_brick_layouts = crop_layouts(complete_graph, silhouette_path)
     return cropped_brick_layouts
