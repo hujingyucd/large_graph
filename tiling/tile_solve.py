@@ -121,6 +121,7 @@ def tiling_a_region(plotter: Plotter,
 
         # hacking for probs
         result_brick_layout.predict_probs = result_brick_layout.predict
+        print("holes: ", result_brick_layout.detect_holes())
 
         # write_bricklayout(folder_path=os.path.join(save_path, "./"),
         #                   file_name=f'{score}_{idx}_data.pkl',

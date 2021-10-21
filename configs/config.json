@@ -2,18 +2,18 @@
     "training": {
         "seed": 999,
         "logging_level": "DEBUG",
-        "data_path": "/research/dept8/fyp21/cwf2101/data/L3+long_tile-ring10-4000",
-        "model_save_path": "./results/default/released_models",
+        "data_path": "/research/dept8/fyp21/cwf2101/data/L3+long_tile-ring10-4000-pyg2",
+        "model_save_path": "./results/10-1-10-4/released_models",
         "total_train_epoch": 10000,
         "save_model_per_epoch": 5,
-        "log_dir": "./results/default/logs",
+        "log_dir": "./results/10-1-10-4/logs",
         "loss": {
            "area_weight": 1.0,
             "collision_weight": 10.0,
             "solution_weight": 10.0
         },
-        "sample_per_epoch": 0,
-        "sample_method": "bernoulli",
+        "sample_per_epoch": 1,
+        "sample_method": "solver",
         "optimizer": {
             "lr": 1e-5
         }

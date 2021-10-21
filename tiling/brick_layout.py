@@ -301,7 +301,7 @@ class BrickLayout():
     def get_selected_tiles_union_polygon(self):
         return unary_union(self.get_selected_tiles())
 
-    def detect_holes(self):
+    def detect_holes(self) -> int:
         # DETECT HOLE
         selected_tiles = [
             self.complete_graph.tiles[self.inverse_index[i]].tile_poly.buffer(
@@ -309,17 +309,20 @@ class BrickLayout():
         ]
         unioned_shape = unary_union(selected_tiles)
         if isinstance(unioned_shape, shapely.geometry.polygon.Polygon):
-            if len(list(unioned_shape.interiors)) > 0:
-                return True
+            # if len(list(unioned_shape.interiors)) > 0:
+            #     return True
+            return len(list(unioned_shape.interiors))
         elif isinstance(unioned_shape,
                         shapely.geometry.multipolygon.MultiPolygon):
-            if any([
-                    len(list(unioned_shape[i].interiors)) > 0
-                    for i in range(len(unioned_shape))
-            ]):
-                return True
-
-        return False
+            # if any([
+            #         len(list(unioned_shape[i].interiors)) > 0
+            #         for i in range(len(unioned_shape))
+            # ]):
+            #     return True
+            return sum([len(list(shape.interiors)) for shape in unioned_shape])
+        else:
+            raise TypeError("unioned_shape of type {}".format(
+                type(unioned_shape)))
 
     def _to_torch_tensor(self, device, node_feature, align_edge_index,
                          align_edge_features, collide_edge_index,
@@ -342,7 +345,6 @@ class BrickLayout():
             self.collide_edge_features)
 
         return x, adj_edge_index, adj_edge_features, collide_edge_index, collide_edge_features
-
 
     def compute_sub_layout(self, predict):
         assert len(self.node_feature) == len(predict.labelled_nodes) + len(
