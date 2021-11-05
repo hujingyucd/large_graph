@@ -21,19 +21,19 @@ SIMPLIFIED_TILE_EPS = BUFFER_TILE_EPS * 1e3
 class BrickLayout():
     def __init__(self,
                  complete_graph: TileGraph,
-                 node_feature: np.ndarray,
-                 collide_edge_index: np.ndarray,
-                 collide_edge_features: np.ndarray,
-                 align_edge_index: np.ndarray,
-                 align_edge_features: np.ndarray,
+                 node_feature: torch.Tensor,
+                 collide_edge_index: torch.Tensor,
+                 collide_edge_features: torch.Tensor,
+                 align_edge_index: torch.Tensor,
+                 align_edge_features: torch.Tensor,
                  re_index,
                  target_polygon=None):
         self.complete_graph = complete_graph
-        self.node_feature = node_feature
+        self.node_feature = node_feature.float()
         self.collide_edge_index = collide_edge_index
-        self.collide_edge_features = collide_edge_features
+        self.collide_edge_features = collide_edge_features.float()
         self.align_edge_index = align_edge_index
-        self.align_edge_features = align_edge_features
+        self.align_edge_features = align_edge_features.float()
 
         # assertion for brick_layout
         # align_edge_index_list = align_edge_index.T.tolist()
@@ -243,9 +243,8 @@ class BrickLayout():
         # return super contour poly if already calculated
         if self.super_contour_poly is None:
             tiles = self.complete_graph.tiles
-            selected_indices = [k for k in self.re_index.keys()]
             selected_tiles = [
-                tiles[s].tile_poly.buffer(1e-6) for s in selected_indices
+                tiles[s].tile_poly.buffer(1e-6) for s in self.re_index.keys()
             ]
             total_polygon = unary_union(selected_tiles).simplify(1e-6)
             self.super_contour_poly = total_polygon
@@ -324,25 +323,34 @@ class BrickLayout():
             raise TypeError("unioned_shape of type {}".format(
                 type(unioned_shape)))
 
-    def _to_torch_tensor(self, device, node_feature, align_edge_index,
-                         align_edge_features, collide_edge_index,
-                         collide_edge_features):
-        x = torch.from_numpy(node_feature).float().to(device)
-        adj_edge_index = torch.from_numpy(align_edge_index).long().to(device)
-        adj_edge_features = torch.from_numpy(align_edge_features).float().to(
-            device)
-        collide_edge_index = torch.from_numpy(collide_edge_index).long().to(
-            device)
-        collide_edge_features = torch.from_numpy(
-            collide_edge_features).float().to(device)
+    # def _to_torch_tensor(self, device, node_feature, align_edge_index,
+    #                      align_edge_features, collide_edge_index,
+    #                      collide_edge_features):
+    #     x = torch.from_numpy(node_feature).float().to(device)
+    #     adj_edge_index = torch.from_numpy(align_edge_index).long().to(device)
+    #     adj_edge_features = torch.from_numpy(align_edge_features).float().to(
+    #         device)
+    #     collide_edge_index = torch.from_numpy(collide_edge_index).long().to(
+    #         device)
+    #     collide_edge_features = torch.from_numpy(
+    #         collide_edge_features).float().to(device)
 
-        return x, adj_edge_index, adj_edge_features, collide_edge_index, collide_edge_features
+    #     return x, adj_edge_index, adj_edge_features, collide_edge_index, collide_edge_features
 
     def get_data_as_torch_tensor(self, device):
-        x, adj_edge_index, adj_edge_features, collide_edge_index, collide_edge_features = self._to_torch_tensor(
-            device, self.node_feature, self.align_edge_index,
-            self.align_edge_features, self.collide_edge_index,
-            self.collide_edge_features)
+        x = self.node_feature.to(
+            device
+        ) if self.node_feature.device != device else self.node_feature
+        adj_edge_index = self.align_edge_index.to(
+            device
+        ) if self.align_edge_index.device != device else self.align_edge_index
+        adj_edge_features = self.align_edge_features.to(device).float(
+        ) if self.align_edge_features.device != device else self.align_edge_features
+        collide_edge_index = self.collide_edge_index.to(
+            device
+        ) if self.collide_edge_index.device != device else self.collide_edge_index
+        collide_edge_features = self.collide_edge_features.to(device).float(
+        ) if self.collide_edge_features.device != device else self.collide_edge_features
 
         return x, adj_edge_index, adj_edge_features, collide_edge_index, collide_edge_features
 
@@ -371,30 +379,28 @@ class BrickLayout():
         node_feature = self.node_feature[list(predict.unlabelled_nodes.keys())]
 
         # index
-        ori_coll_edges = torch.tensor(self.collide_edge_index)
+        ori_coll_edges = self.collide_edge_index
         new_coll_mask = reduce(torch.logical_and, node_mask[ori_coll_edges])
         new_coll_edges = ori_coll_edges[:, new_coll_mask]
 
-        collide_edge_index = node_re_index[new_coll_edges].cpu().numpy()
+        collide_edge_index = node_re_index[new_coll_edges]
 
-        ori_align_edges = torch.tensor(self.align_edge_index)
+        ori_align_edges = self.align_edge_index
         new_align_mask = reduce(torch.logical_and, node_mask[ori_align_edges])
         new_align_edges = ori_align_edges[:, new_align_mask]
 
-        align_edge_index = node_re_index[new_align_edges].cpu().numpy()
+        align_edge_index = node_re_index[new_align_edges]
 
         # feature
-        collide_edge_features = torch.tensor(
-            self.collide_edge_features)[new_coll_mask, :].cpu().numpy()
-        align_edge_features = torch.tensor(
-            self.align_edge_features)[new_align_mask, :].cpu().numpy()
+        collide_edge_features = self.collide_edge_features[new_coll_mask, :]
+        align_edge_features = self.align_edge_features[new_align_mask, :]
 
-        if collide_edge_index.shape[1] == 0:
-            collide_edge_index = np.array([])
-            collide_edge_features = np.array([])
-        if align_edge_index.shape[1] == 0:
-            align_edge_index = np.array([])
-            align_edge_features = np.array([])
+        # if collide_edge_index.shape[1] == 0:
+        #     collide_edge_index = np.array([])
+        #     collide_edge_features = np.array([])
+        # if align_edge_index.shape[1] == 0:
+        #     align_edge_index = np.array([])
+        #     align_edge_features = np.array([])
 
         # print(node_feature.shape, collide_edge_index.shape,
         #       collide_edge_features.shape, align_edge_index.shape,

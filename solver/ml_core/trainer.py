@@ -220,8 +220,9 @@ class Trainer():
                     processed_path = str(data.path[0])
                     queried_layout = self._load_raw_layout(
                         processed_path, complete_graph)
-                    result_layout, _ = solver.solve(queried_layout)
                     with torch.no_grad():
+                        self.network.eval()
+                        result_layout, _ = solver.solve(queried_layout)
                         metrics = 1.0
                         # metric for holes
                         num_holes = result_layout.detect_holes()
@@ -246,6 +247,7 @@ class Trainer():
                         train_metrics["area"].append(metric_area.item())
 
                         reward = train_loss - metrics
+                    self.network.train()
 
                 loss_solution = self.solution_loss(probs, mask, reward)
                 log_items += [
