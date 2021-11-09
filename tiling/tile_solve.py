@@ -110,9 +110,9 @@ def tiling_a_region(plotter: Plotter,
         # direct solve (origin)
         # result_brick_layout, score = solver.solve(result_brick_layout)
 
-        # find best solution in 20 trials
+        # find best solution in multiple trials
         result_brick_layout, score = solver.solve_with_trials(
-            queried_brick_layout, 1)
+            queried_brick_layout, 3)
         solutions.append((result_brick_layout, score))
 
     # show solved layout

@@ -85,7 +85,7 @@ class SampleGraphDataset(Dataset):
 
                 self.logger.info("{}, node: {}, edge: {}".format(
                     target_path, len(data.node_feature),
-                    len(data.collide_edge_index)))
+                    data.collide_edge_index.size(1)))
                 write_bricklayout(*(os.path.split(target_path)), data)
             except Exception as e:
                 self.logger.error("{} {}".format(str(e), raw_path))
