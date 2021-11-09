@@ -120,18 +120,20 @@ class Trainer():
         target_path = os.path.join(self.model_save_path, "latest.pth")
         if not os.path.exists(target_path):
             return
-        data_dict = torch.load(target_path)
+        data_dict = torch.load(target_path, map_location=self.device)
         self.epoch = data_dict["epoch"]
         self.min_test_loss = data_dict["min_test_loss"]
         self.min_test_loss_epoch = data_dict["min_test_loss_epoch"]
 
         net_path = os.path.join(self.model_save_path,
                                 "model_{}.pth".format(self.epoch))
-        self.network.load_state_dict(torch.load(net_path))
+        self.network.load_state_dict(
+            torch.load(net_path, map_location=self.device))
 
         optim_path = os.path.join(self.model_save_path,
                                   "optimizer_{}.pth".format(self.epoch))
-        self.optimizer.load_state_dict(torch.load(optim_path))
+        self.optimizer.load_state_dict(
+            torch.load(optim_path, map_location=self.device))
 
     def calculate_unsupervised_losses(
             self, probs: torch.Tensor, area: torch.Tensor,

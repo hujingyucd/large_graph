@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Union, Dict, DefaultDict
 from functools import reduce
 import numpy as np
 import torch
@@ -26,7 +26,8 @@ class BrickLayout():
                  collide_edge_features: torch.Tensor,
                  align_edge_index: torch.Tensor,
                  align_edge_features: torch.Tensor,
-                 re_index,
+                 re_index: Dict = {},
+                 inverse_index: DefaultDict = defaultdict(int),
                  target_polygon=None):
         self.complete_graph = complete_graph
         self.node_feature = node_feature.float()
@@ -46,11 +47,16 @@ class BrickLayout():
         #     assert [f[1], f[0]] in collide_edge_index_list
 
         # mapping from index of complete graph to index of super graph
-        self.re_index = re_index
-        # mapping from index of super graph to index of complete graph
-        self.inverse_index = defaultdict(int)
-        for k, v in self.re_index.items():
-            self.inverse_index[v] = k
+        if re_index:
+            self.re_index = re_index
+            # mapping from index of super graph to index of complete graph
+            # self.inverse_index = defaultdict(int)
+            self.inverse_index = {}
+            for k, v in self.re_index.items():
+                self.inverse_index[v] = k
+        elif inverse_index:
+            self.inverse_index = inverse_index
+            self.re_index = {v: k for k, v in inverse_index.items()}
 
         self.predict = np.zeros(len(self.node_feature))
         self.predict_probs: Union[List[float], np.ndarray] = []
@@ -384,16 +390,19 @@ class BrickLayout():
         new_coll_edges = ori_coll_edges[:, new_coll_mask]
 
         collide_edge_index = node_re_index[new_coll_edges]
-
-        ori_align_edges = self.align_edge_index
-        new_align_mask = reduce(torch.logical_and, node_mask[ori_align_edges])
-        new_align_edges = ori_align_edges[:, new_align_mask]
-
-        align_edge_index = node_re_index[new_align_edges]
-
-        # feature
         collide_edge_features = self.collide_edge_features[new_coll_mask, :]
-        align_edge_features = self.align_edge_features[new_align_mask, :]
+
+        if self.align_edge_index.size(-1):
+            ori_align_edges = self.align_edge_index
+            new_align_mask = reduce(torch.logical_and,
+                                    node_mask[ori_align_edges])
+            new_align_edges = ori_align_edges[:, new_align_mask]
+
+            align_edge_index = node_re_index[new_align_edges]
+            align_edge_features = self.align_edge_features[new_align_mask, :]
+        else:
+            align_edge_index = torch.tensor([])
+            align_edge_features = torch.tensor([])
 
         # if collide_edge_index.shape[1] == 0:
         #     collide_edge_index = np.array([])
@@ -406,14 +415,19 @@ class BrickLayout():
         #       collide_edge_features.shape, align_edge_index.shape,
         #       align_edge_features.shape)
 
-        # compute index mapping from current index to original index
+        # compute index mapping from new index to original index
         node_inverse_index = {}
         for idx, key in enumerate(predict.unlabelled_nodes):
             node_inverse_index[idx] = key
 
         fixed_re_index = {}
         for i in range(node_feature.shape[0]):
-            fixed_re_index[self.inverse_index[node_inverse_index[i]]] = i
+            try:
+                fixed_re_index[self.inverse_index[node_inverse_index[i]]] = i
+            except KeyError as e:
+                print(e)
+                print(i, node_inverse_index[i])
+                raise e
 
         return BrickLayout(
             complete_graph,
