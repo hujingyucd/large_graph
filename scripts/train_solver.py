@@ -60,12 +60,14 @@ if __name__ == "__main__":
     # gnn = nn.DataParallel(gnn,device_ids=[0,2,3])
 
     data_path = config["training"]["data_path"]
-    dataset_train = TileGraphDataset(root=data_path,
-                                     split="train",
-                                     subgraph_num=4000)
-    dataset_test = TileGraphDataset(root=data_path,
-                                    split="test",
-                                    subgraph_num=800)
+    dataset_train = TileGraphDataset(
+        root=data_path,
+        split="train",
+        subgraph_num=config["solver"]["training"]["dataset_size"]["train"])
+    dataset_test = TileGraphDataset(
+        root=data_path,
+        split="test",
+        subgraph_num=config["solver"]["training"]["dataset_size"]["test"])
 
     optimizer = torch.optim.Adam(gnn.parameters(),
                                  eps=1e-4,

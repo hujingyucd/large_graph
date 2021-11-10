@@ -40,7 +40,7 @@ if __name__ == "__main__":
                                                           exist_ok=True)
     logging.basicConfig(
         filename=os.path.join(config["selector"]["training"]["log_dir"],
-                              "other.log"),
+                              "all.log"),
         format='%(asctime)s %(name)s %(levelname)-8s %(message)s',
         level=getattr(logging, config["logging_level"]),
         datefmt='%Y-%m-%d %H:%M:%S')
@@ -76,7 +76,6 @@ if __name__ == "__main__":
         ["save_model_per_epoch"])
 
     from solver.ml_solver import MLSolver
-    from interfaces.qt_plot import Plotter
     from tiling.tile_graph import TileGraph
 
     solver = MLSolver(device=device, network=gnn, trainer=trainer)
@@ -106,10 +105,12 @@ if __name__ == "__main__":
         network_width=config["selector"]["network"]["width"],
         output_dim=config["selector"]["network"]["output_dim"]).to(device)
 
-    logging.getLogger("TRAINER").addHandler(
-        logging.FileHandler(
-            os.path.join(config["selector"]["training"]["log_dir"],
-                         "output.log")))
+    fh = logging.FileHandler(
+        os.path.join(config["selector"]["training"]["log_dir"],
+                     "training.log"))
+    fh.setFormatter(
+        logging.Formatter('%(asctime)s %(name)s %(levelname)-8s %(message)s'))
+    logging.getLogger("TRAINER").addHandler(fh)
     selector_trainer = SelectorTrainer(
         selector_net,
         dataset_train=dataset_train,
@@ -129,5 +130,9 @@ if __name__ == "__main__":
         save_model_per_epoch=config["selector"]["training"]
         ["save_model_per_epoch"])
 
-    selector_trainer.train(plotter=Plotter())
+    if config["selector"]["training"]["show_intermediate"]:
+        from interfaces.qt_plot import Plotter
+        selector_trainer.train(plotter=Plotter())
+    else:
+        selector_trainer.train(plotter=None)
     vdisplay.stop()

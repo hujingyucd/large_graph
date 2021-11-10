@@ -102,9 +102,9 @@ class SelectorTrainer():
         self.optimizer.load_state_dict(torch.load(optim_path))
 
     def train_single_epoch(self, plotter: Plotter = None):
-        self.logger.info("training epoch start")
-        torch.cuda.empty_cache()
         i = self.epoch
+        self.logger.info("training epoch {} start".format(i))
+        torch.cuda.empty_cache()
         train_metrics = {"holes": [], "loss": []}
         self.network.train()
         for idx, data in enumerate(self.loader_train):
@@ -153,7 +153,7 @@ class SelectorTrainer():
             self.writer.add_scalar("train/{}".format(key),
                                    sum(vs) / len(vs), self.epoch)
 
-        self.logger.info("training epoch done\n")
+        self.logger.info("training epoch {} done\n".format(i))
 
         torch.cuda.empty_cache()
 
@@ -171,6 +171,10 @@ class SelectorTrainer():
                 range(len(self.dataset_train)), len(self.dataset_train)))
             self.loader_test = (self.dataset_train[i] for i in random.sample(
                 range(len(self.dataset_train)), len(self.dataset_train)))
-            self.train_single_epoch(plotter)
+            try:
+                self.train_single_epoch(plotter)
+            except Exception as e:
+                print("epoch: ", self.epoch)
+                raise e
             self.epoch += 1
         self.logger.info("training done\n")

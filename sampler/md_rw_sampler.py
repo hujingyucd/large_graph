@@ -34,6 +34,8 @@ class MDRandomWalkSampler(Sampler):
             uid = random.choices(range(self.root_num), degrees)[0]
             u = vfs[uid]
             neighbors = edges[1][edges[0] == u]
+            if not neighbors.size(0):
+                continue
             v = neighbors[torch.randint(0, neighbors.size(0), (1, ))]
             vfs[uid] = v
             vs[v] = True

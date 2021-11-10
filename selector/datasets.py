@@ -83,7 +83,7 @@ class SampleGraphDataset(Dataset):
                 if self.pre_transform is not None:
                     data = self.pre_transform(data)
 
-                self.logger.info("{}, node: {}, edge: {}".format(
+                self.logger.debug("{}, node: {}, edge: {}".format(
                     target_path, len(data.node_feature),
                     data.collide_edge_index.size(1)))
                 write_bricklayout(*(os.path.split(target_path)), data)

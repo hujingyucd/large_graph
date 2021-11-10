@@ -14,7 +14,8 @@
             "log_dir": "./results/test/logs",
             "optimizer": {
                 "lr": 1e-5
-            }
+            },
+            "show_intermediate": true
         },
         "network": {
             "depth": 5,
@@ -25,6 +26,10 @@
     "solver": {
         "training": {
             "data_path": "./data",
+            "dataset_size": {
+                "train": 3,
+                "test": 3
+            },
             "model_save_path": "./results/10-1-10-4/released_models",
             "total_train_epoch": 10000,
             "save_model_per_epoch": 5,

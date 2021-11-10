@@ -48,7 +48,12 @@ def solve_by_sample_selection(
         node id relabelled from 0 to current |V|
     '''
 
-    sampled_edges, sampled_node_mask = sampler(full_graph.collide_edge_index)
+    try:
+        sampled_edges, sampled_node_mask = sampler(
+            full_graph.collide_edge_index)
+    except RuntimeError as e:
+        print("data: ", getattr(full_graph, "idx", "unknown"))
+        raise e
     sampled_node_ids = torch.arange(
         full_graph.node_feature.size(0))[sampled_node_mask]
 
@@ -61,7 +66,7 @@ def solve_by_sample_selection(
     intermediate_results = []
     # iteratively process
     while len(current_node_ids) > 0:
-        print(current_edges.size())
+        # print(current_edges.size())
         '''
         special case as batch norm in network requires more
         than 1 channels when training
@@ -79,7 +84,7 @@ def solve_by_sample_selection(
 
         # get BFS subgraph from current full graph
         current_full_edges = current_full_graph.collide_edge_index
-        print("current full edges", current_full_edges.size())
+        # print("current full edges", current_full_edges.size())
         sub_nodes, sub_edges, _, edge_masks = k_hop_subgraph(
             original_node_id.item(),
             3,

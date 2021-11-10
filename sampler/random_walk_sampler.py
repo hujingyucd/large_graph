@@ -32,6 +32,8 @@ class RandomWalkSampler(Sampler):
             u = v
             for _ in range(self.rw_length):
                 neighbors = edges[1][edges[0] == u]
+                if not neighbors.size(0):
+                    break
                 u = neighbors[torch.randint(0, neighbors.size(0), (1, ))]
                 vs[u] = True
         new_edges, _ = subgraph(vs, edges, relabel_nodes=True)
