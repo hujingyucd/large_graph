@@ -15,6 +15,15 @@ def coverage_score(predict: Union[torch.Tensor, np.ndarray],
     # calculate total area
     filled_area = predict.dot(x[:, -1] * brick_layout.complete_graph.max_area
                               ) / brick_layout.get_super_contour_poly().area
-    assert filled_area >= -EPS and filled_area <= 1 + EPS
+    try:
+        assert filled_area >= -EPS and filled_area <= 1 + EPS
+    except AssertionError as e:
+        print(torch.sum(predict))
+        print(filled_area)
+        print(predict.shape)
+        print(brick_layout.complete_graph.max_area)
+        print(brick_layout.get_super_contour_poly().area)
+        print(x.shape)
+        raise e
 
     return (filled_area).detach().cpu().item()

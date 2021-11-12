@@ -1,30 +1,58 @@
 {
-    "training": {
-        "seed": 999,
-        "logging_level": "DEBUG",
-        "data_path": "/research/dept8/fyp21/cwf2101/data/L3+long_tile-ring10-4000",
-        "model_save_path": "./results/default/released_models",
-        "total_train_epoch": 10000,
-        "save_model_per_epoch": 5,
-        "log_dir": "./results/default/logs",
-        "loss": {
-           "area_weight": 1.0,
-            "collision_weight": 10.0,
-            "solution_weight": 10.0
+    "seed": 999,
+    "logging_level": "DEBUG",
+    "selector": {
+        "training": {
+            "data_path": "./data",
+            "dataset_size": {
+                "train": 3,
+                "test": 3
+            },
+            "model_save_path": "./results/test/released_models",
+            "total_train_epoch": 1000,
+            "save_model_per_epoch": 3,
+            "log_dir": "./results/test/logs",
+            "optimizer": {
+                "lr": 1e-5
+            },
+            "show_intermediate": true
         },
-        "sample_per_epoch": 0,
-        "sample_method": "bernoulli",
-        "optimizer": {
-            "lr": 1e-5
+        "network": {
+            "depth": 5,
+            "width": 32,
+            "output_dim": 1
         }
     },
-    "network": {
-        "depth": 10,
-        "width": 32,
-        "output_dim": 1
+    "solver": {
+        "training": {
+            "data_path": "./data",
+            "dataset_size": {
+                "train": 3,
+                "test": 3
+            },
+            "model_save_path": "./results/10-1-10-4/released_models",
+            "total_train_epoch": 10000,
+            "save_model_per_epoch": 5,
+            "log_dir": "./results/10-1-10-4/logs",
+            "loss": {
+                "area_weight": 10.0,
+                "collision_weight": 1.0,
+                "solution_weight": 10.0
+            },
+            "sample_per_epoch": 1,
+            "sample_method": "solver",
+            "optimizer": {
+                "lr": 1e-4
+            }
+        },
+        "network": {
+            "depth": 10,
+            "width": 32,
+            "output_dim": 1
+        }
     },
     "tiling": {
-        "complete_graph_path": "/research/dept8/fyp21/cwf2101/data/complete_graph/L3+long_tile/complete_graph_ring10.pkl",
+        "complete_graph_path": "./data/complete_graph_ring10.pkl",
         "cropped_layouts_dir": "/research/dept8/fyp21/cwf2101/shared/contours/L3+long_tile_ring10",
         "tile_count": 2,
         "silhouette_list": "/research/dept8/fyp21/cwf2101/rchuan/working/large_graph/configs/silhouette_list.txt"

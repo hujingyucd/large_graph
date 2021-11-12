@@ -74,10 +74,18 @@ def label_collision_neighbor(collision_edges, new_predict, origin_idx,
                                                    origin_idx]
     else:
         neighbor_collid_tiles = []
-    for adj_n in neighbor_collid_tiles:
+    for adj_node in neighbor_collid_tiles:
+        adj_n = adj_node.item()
         if adj_n in new_predict.unlabelled_nodes:
-            assert adj_n not in new_predict.labelled_nodes
-            new_predict.label_node(adj_n, 0, origin_layout)
+            try:
+                assert adj_n not in new_predict.labelled_nodes
+            except AssertionError as e:
+                print(adj_n)
+                print(new_predict.unlabelled_nodes)
+                print(new_predict.labelled_nodes)
+                raise e
+            else:
+                new_predict.label_node(adj_n, 0, origin_layout)
 
     return new_predict
 
@@ -109,6 +117,7 @@ class SelectionSolution():
         self.current_polygon = Polygon([])
 
     def label_node(self, node_idx, node_label, brick_layout):
+        assert node_idx not in self.labelled_nodes
         self.labelled_nodes[node_idx] = node_label
         self.unlabelled_nodes.pop(node_idx)
         # update polygon if the node_label is 1

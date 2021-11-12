@@ -2,6 +2,7 @@ import os
 import sys
 import logging
 import torch
+import numpy as np
 from torch_geometric.loader import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from solver.ml_core.losses import AreaLoss, OverlapLoss, SolutionLoss
@@ -61,6 +62,8 @@ class Trainer():
         elif sample_method == "greedy":
             from utils.graph_utils import sample_solution_greedy
             self.sample_solution = sample_solution_greedy
+        elif sample_method == "solver":
+            self.sample_solution = None
         self.sample_per_epoch = sample_per_epoch
 
         self.total_train_epoch = total_train_epoch
@@ -117,18 +120,20 @@ class Trainer():
         target_path = os.path.join(self.model_save_path, "latest.pth")
         if not os.path.exists(target_path):
             return
-        data_dict = torch.load(target_path)
+        data_dict = torch.load(target_path, map_location=self.device)
         self.epoch = data_dict["epoch"]
         self.min_test_loss = data_dict["min_test_loss"]
         self.min_test_loss_epoch = data_dict["min_test_loss_epoch"]
 
         net_path = os.path.join(self.model_save_path,
                                 "model_{}.pth".format(self.epoch))
-        self.network.load_state_dict(torch.load(net_path))
+        self.network.load_state_dict(
+            torch.load(net_path, map_location=self.device))
 
         optim_path = os.path.join(self.model_save_path,
                                   "optimizer_{}.pth".format(self.epoch))
-        self.optimizer.load_state_dict(torch.load(optim_path))
+        self.optimizer.load_state_dict(
+            torch.load(optim_path, map_location=self.device))
 
     def calculate_unsupervised_losses(
             self, probs: torch.Tensor, area: torch.Tensor,
@@ -167,6 +172,7 @@ class Trainer():
         self.logger.info("training epoch start")
         torch.cuda.empty_cache()
         i = self.epoch
+        train_metrics = {}
         self.network.train()
         for batch in self.loader_train:
             self.optimizer.zero_grad()
@@ -204,22 +210,52 @@ class Trainer():
             ]
 
             if self.sample_per_epoch and i % self.sample_per_epoch == 0:
-                with torch.no_grad():
-                    _, mask = self.sample_solution(data, probs)
-                    mask = torch.unsqueeze(mask, 1)
-                    solution = torch.where(mask, 1.0, 0.0)
-                    score_area = self.area_loss(solution, data.x).detach()
-                    score_coll = self.collision_loss(solution,
-                                                     data.edge_index).detach()
-                    score = score_area * score_coll
-                    # solution = solution.long()
-                    reward = train_loss - score
+                if self.sample_solution:
+                    with torch.no_grad():
+                        _, mask = self.sample_solution(data, probs)
+                        mask = torch.unsqueeze(mask, 1)
+                        solution = torch.where(mask, 1.0, 0.0)
+                        metric_area = self.area_loss(solution, data.x).detach()
+                        metrics = metric_area * 1.0
+                        reward = train_loss - metrics
+                else:
+                    processed_path = str(data.path[0])
+                    queried_layout = self._load_raw_layout(
+                        processed_path, complete_graph)
+                    with torch.no_grad():
+                        self.network.eval()
+                        result_layout, _ = solver.solve(queried_layout)
+                        metrics = 1.0
+                        # metric for holes
+                        num_holes = result_layout.detect_holes()
+                        metric_hole = torch.log(
+                            torch.tensor(float(num_holes)).to(
+                                self.device)) * 0.1 + 1.0
+                        metrics *= metric_hole
+                        if "hole" not in train_metrics:
+                            train_metrics["hole"] = []
+                        train_metrics["hole"].append(metric_hole.item())
+
+                        # metric for area
+                        solution = torch.unsqueeze(
+                            torch.from_numpy(
+                                np.array(result_layout.predict_probs)).to(
+                                    self.device), 1)
+                        mask = torch.where(solution > 0.5, True, False)
+                        metric_area = self.area_loss(solution, data.x).detach()
+                        metrics *= metric_area
+                        if "area" not in train_metrics:
+                            train_metrics["area"] = []
+                        train_metrics["area"].append(metric_area.item())
+
+                        reward = train_loss - metrics
+                    self.network.train()
 
                 loss_solution = self.solution_loss(probs, mask, reward)
                 log_items += [
-                    "score {:6f}".format(score.item()),
+                    "metrics {:6f}".format(metrics.item()),
                     "loss_solution {:6f}".format(loss_solution.item()),
-                    "score_area {:6f}".format(score_area.item())
+                    "metric_area {:6f}".format(metric_area.item())
                 ]
                 train_loss = train_loss * loss_solution
 
@@ -230,6 +266,10 @@ class Trainer():
             self.optimizer.step()
 
             self.logger.debug(", ".join(log_items))
+
+        for key, vs in train_metrics.items():
+            self.writer.add_scalar("Metric_{}/train".format(key),
+                                   sum(vs) / len(vs), self.epoch)
 
         self.logger.info("training epoch done\n\n")
 
@@ -269,7 +309,12 @@ class Trainer():
             self.save()
             self.logger.info("model saved at epoch {}".format(i))
 
-    # solve and visualize
+    def _load_raw_layout(self, processed_path, complete_graph):
+        raw_path = os.path.splitext("raw".join(
+            processed_path.rsplit('processed', 1)))[0] + '.pkl'
+        assert complete_graph is not None
+        return load_bricklayout(raw_path, complete_graph)
+
     def evaluate(self,
                  plotter: Plotter = None,
                  complete_graph: TileGraph = None,
@@ -281,13 +326,9 @@ class Trainer():
             return
         data = getattr(self, "dataset_" + split)[idx].to(self.device)
         processed_path = str(data.path)
-        raw_path = os.path.splitext("raw".join(
-            processed_path.rsplit('processed', 1)))[0] + '.pkl'
-        assert complete_graph is not None
-        queried_layout = load_bricklayout(raw_path, complete_graph)
+        queried_layout = self._load_raw_layout(processed_path, complete_graph)
         assert solver is not None
         result_layout, score = solver.solve_with_trials(queried_layout, 3)
-
         self.writer.add_scalar("Score/" + split, score, self.epoch)
         # self.logger.info("score {} {} {}".format(split, score, self.epoch))
         result_layout.predict_probs = result_layout.predict
@@ -305,7 +346,7 @@ class Trainer():
         self.logger.info("training start")
         while self.epoch < self.total_train_epoch:
             self.train_single_epoch(plotter, solver, complete_graph)
-            self.evaluate(plotter, complete_graph, solver, "train")
-            self.evaluate(plotter, complete_graph, solver, "test")
+            # self.evaluate(plotter, complete_graph, solver, "train")
+            # self.evaluate(plotter, complete_graph, solver, "test")
             self.epoch += 1
         self.logger.info("training done\n\n")

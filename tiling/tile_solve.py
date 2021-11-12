@@ -110,9 +110,9 @@ def tiling_a_region(plotter: Plotter,
         # direct solve (origin)
         # result_brick_layout, score = solver.solve(result_brick_layout)
 
-        # find best solution in 20 trials
+        # find best solution in multiple trials
         result_brick_layout, score = solver.solve_with_trials(
-            queried_brick_layout, 1)
+            queried_brick_layout, 3)
         solutions.append((result_brick_layout, score))
 
     # show solved layout
@@ -121,6 +121,7 @@ def tiling_a_region(plotter: Plotter,
 
         # hacking for probs
         result_brick_layout.predict_probs = result_brick_layout.predict
+        print("holes: ", result_brick_layout.detect_holes())
 
         # write_bricklayout(folder_path=os.path.join(save_path, "./"),
         #                   file_name=f'{score}_{idx}_data.pkl',

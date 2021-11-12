@@ -55,7 +55,9 @@ class BaseSolver(ABC):
         """
         For MIS Problem:
             Given the input, return the solutions
-            (list of index of selected nodes, the size of the graph)
+            return:
+                result bricklayout
+                coverage score
         """
         pass
 

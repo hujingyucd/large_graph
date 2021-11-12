@@ -46,6 +46,9 @@ def write_brick_layout_data(save_path,
 
 
 def load_brick_layout_data(save_path):
+    '''
+    return numpy arrays
+    '''
     f = pickle.load(open(save_path, "rb"))
 
     assert ('re_index' in f.keys())
@@ -65,7 +68,10 @@ def load_brick_layout_data(save_path):
                     'predict_probs']
 
 
-def load_bricklayout(file_path, complete_graph: TileGraph):
+def load_bricklayout(file_path, complete_graph: TileGraph, device='cpu'):
+    '''
+    load brick layout with tensors as attributes
+    '''
     re_index, node_features, collide_edge_index, collide_edge_features, align_edge_index, align_edge_features, predict, predict_order, target_polygon, predict_probs = load_brick_layout_data(
         file_path)
 
@@ -74,9 +80,18 @@ def load_bricklayout(file_path, complete_graph: TileGraph):
         node_features, collide_edge_index, collide_edge_features, align_edge_index, align_edge_features = recover_features_from_reindex(
             re_index, complete_graph)
 
+    node_features_tensor = torch.from_numpy(node_features).to(device)
+    collide_edge_index_tensor = torch.from_numpy(collide_edge_index).to(device)
+    collide_edge_features_tensor = torch.from_numpy(collide_edge_features).to(
+        device)
+    align_edge_index_tensor = torch.from_numpy(align_edge_index).to(device)
+    align_edge_features_tensor = torch.from_numpy(align_edge_features).to(
+        device)
+
     output_layout = tiling.brick_layout.BrickLayout(
-        complete_graph, node_features, collide_edge_index,
-        collide_edge_features, align_edge_index, align_edge_features, re_index)
+        complete_graph, node_features_tensor, collide_edge_index_tensor,
+        collide_edge_features_tensor, align_edge_index_tensor,
+        align_edge_features_tensor, re_index)
     if predict is not None:
         output_layout.predict = predict
     if predict_order is not None:
@@ -93,6 +108,9 @@ def write_bricklayout(folder_path: str,
                       file_name: str,
                       brick_layout: BrickLayout,
                       with_features: bool = True):
+    '''
+    write brick layout data as numpy arrays
+    '''
     node_features = None
     collide_edge_index = None
     collide_edge_features = None
@@ -100,11 +118,14 @@ def write_bricklayout(folder_path: str,
     align_edge_features = None
 
     if with_features:
-        node_features = brick_layout.node_feature
-        collide_edge_index = brick_layout.collide_edge_index
-        collide_edge_features = brick_layout.collide_edge_features
-        align_edge_index = brick_layout.align_edge_index
-        align_edge_features = brick_layout.align_edge_features
+        node_features = brick_layout.node_feature.cpu().detach().numpy()
+        collide_edge_index = brick_layout.collide_edge_index.cpu().detach(
+        ).numpy()
+        collide_edge_features = brick_layout.collide_edge_features.cpu(
+        ).detach().numpy()
+        align_edge_index = brick_layout.align_edge_index.cpu().detach().numpy()
+        align_edge_features = brick_layout.align_edge_features.cpu().detach(
+        ).numpy()
 
     write_brick_layout_data(save_path=file_name,
                             node_features=node_features,

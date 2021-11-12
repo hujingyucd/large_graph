@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Union, Dict, DefaultDict
 from functools import reduce
 import numpy as np
 import torch
@@ -21,19 +21,20 @@ SIMPLIFIED_TILE_EPS = BUFFER_TILE_EPS * 1e3
 class BrickLayout():
     def __init__(self,
                  complete_graph: TileGraph,
-                 node_feature: np.ndarray,
-                 collide_edge_index: np.ndarray,
-                 collide_edge_features: np.ndarray,
-                 align_edge_index: np.ndarray,
-                 align_edge_features: np.ndarray,
-                 re_index,
+                 node_feature: torch.Tensor,
+                 collide_edge_index: torch.Tensor,
+                 collide_edge_features: torch.Tensor,
+                 align_edge_index: torch.Tensor,
+                 align_edge_features: torch.Tensor,
+                 re_index: Dict = {},
+                 inverse_index: DefaultDict = defaultdict(int),
                  target_polygon=None):
         self.complete_graph = complete_graph
-        self.node_feature = node_feature
+        self.node_feature = node_feature.float()
         self.collide_edge_index = collide_edge_index
-        self.collide_edge_features = collide_edge_features
+        self.collide_edge_features = collide_edge_features.float()
         self.align_edge_index = align_edge_index
-        self.align_edge_features = align_edge_features
+        self.align_edge_features = align_edge_features.float()
 
         # assertion for brick_layout
         # align_edge_index_list = align_edge_index.T.tolist()
@@ -46,11 +47,16 @@ class BrickLayout():
         #     assert [f[1], f[0]] in collide_edge_index_list
 
         # mapping from index of complete graph to index of super graph
-        self.re_index = re_index
-        # mapping from index of super graph to index of complete graph
-        self.inverse_index = defaultdict(int)
-        for k, v in self.re_index.items():
-            self.inverse_index[v] = k
+        if re_index:
+            self.re_index = re_index
+            # mapping from index of super graph to index of complete graph
+            # self.inverse_index = defaultdict(int)
+            self.inverse_index = {}
+            for k, v in self.re_index.items():
+                self.inverse_index[v] = k
+        elif inverse_index:
+            self.inverse_index = inverse_index
+            self.re_index = {v: k for k, v in inverse_index.items()}
 
         self.predict = np.zeros(len(self.node_feature))
         self.predict_probs: Union[List[float], np.ndarray] = []
@@ -243,9 +249,8 @@ class BrickLayout():
         # return super contour poly if already calculated
         if self.super_contour_poly is None:
             tiles = self.complete_graph.tiles
-            selected_indices = [k for k in self.re_index.keys()]
             selected_tiles = [
-                tiles[s].tile_poly.buffer(1e-6) for s in selected_indices
+                tiles[s].tile_poly.buffer(1e-6) for s in self.re_index.keys()
             ]
             total_polygon = unary_union(selected_tiles).simplify(1e-6)
             self.super_contour_poly = total_polygon
@@ -301,7 +306,7 @@ class BrickLayout():
     def get_selected_tiles_union_polygon(self):
         return unary_union(self.get_selected_tiles())
 
-    def detect_holes(self):
+    def detect_holes(self) -> int:
         # DETECT HOLE
         selected_tiles = [
             self.complete_graph.tiles[self.inverse_index[i]].tile_poly.buffer(
@@ -309,40 +314,51 @@ class BrickLayout():
         ]
         unioned_shape = unary_union(selected_tiles)
         if isinstance(unioned_shape, shapely.geometry.polygon.Polygon):
-            if len(list(unioned_shape.interiors)) > 0:
-                return True
+            # if len(list(unioned_shape.interiors)) > 0:
+            #     return True
+            return len(list(unioned_shape.interiors))
         elif isinstance(unioned_shape,
                         shapely.geometry.multipolygon.MultiPolygon):
-            if any([
-                    len(list(unioned_shape[i].interiors)) > 0
-                    for i in range(len(unioned_shape))
-            ]):
-                return True
+            # if any([
+            #         len(list(unioned_shape[i].interiors)) > 0
+            #         for i in range(len(unioned_shape))
+            # ]):
+            #     return True
+            return sum([len(list(shape.interiors)) for shape in unioned_shape])
+        else:
+            raise TypeError("unioned_shape of type {}".format(
+                type(unioned_shape)))
 
-        return False
+    # def _to_torch_tensor(self, device, node_feature, align_edge_index,
+    #                      align_edge_features, collide_edge_index,
+    #                      collide_edge_features):
+    #     x = torch.from_numpy(node_feature).float().to(device)
+    #     adj_edge_index = torch.from_numpy(align_edge_index).long().to(device)
+    #     adj_edge_features = torch.from_numpy(align_edge_features).float().to(
+    #         device)
+    #     collide_edge_index = torch.from_numpy(collide_edge_index).long().to(
+    #         device)
+    #     collide_edge_features = torch.from_numpy(
+    #         collide_edge_features).float().to(device)
 
-    def _to_torch_tensor(self, device, node_feature, align_edge_index,
-                         align_edge_features, collide_edge_index,
-                         collide_edge_features):
-        x = torch.from_numpy(node_feature).float().to(device)
-        adj_edge_index = torch.from_numpy(align_edge_index).long().to(device)
-        adj_edge_features = torch.from_numpy(align_edge_features).float().to(
-            device)
-        collide_edge_index = torch.from_numpy(collide_edge_index).long().to(
-            device)
-        collide_edge_features = torch.from_numpy(
-            collide_edge_features).float().to(device)
-
-        return x, adj_edge_index, adj_edge_features, collide_edge_index, collide_edge_features
+    #     return x, adj_edge_index, adj_edge_features, collide_edge_index, collide_edge_features
 
     def get_data_as_torch_tensor(self, device):
-        x, adj_edge_index, adj_edge_features, collide_edge_index, collide_edge_features = self._to_torch_tensor(
-            device, self.node_feature, self.align_edge_index,
-            self.align_edge_features, self.collide_edge_index,
-            self.collide_edge_features)
+        x = self.node_feature.to(
+            device
+        ) if self.node_feature.device != device else self.node_feature
+        adj_edge_index = self.align_edge_index.to(
+            device
+        ) if self.align_edge_index.device != device else self.align_edge_index
+        adj_edge_features = self.align_edge_features.to(device).float(
+        ) if self.align_edge_features.device != device else self.align_edge_features
+        collide_edge_index = self.collide_edge_index.to(
+            device
+        ) if self.collide_edge_index.device != device else self.collide_edge_index
+        collide_edge_features = self.collide_edge_features.to(device).float(
+        ) if self.collide_edge_features.device != device else self.collide_edge_features
 
         return x, adj_edge_index, adj_edge_features, collide_edge_index, collide_edge_features
-
 
     def compute_sub_layout(self, predict):
         assert len(self.node_feature) == len(predict.labelled_nodes) + len(
@@ -369,43 +385,49 @@ class BrickLayout():
         node_feature = self.node_feature[list(predict.unlabelled_nodes.keys())]
 
         # index
-        ori_coll_edges = torch.tensor(self.collide_edge_index)
+        ori_coll_edges = self.collide_edge_index
         new_coll_mask = reduce(torch.logical_and, node_mask[ori_coll_edges])
         new_coll_edges = ori_coll_edges[:, new_coll_mask]
 
-        collide_edge_index = node_re_index[new_coll_edges].cpu().numpy()
+        collide_edge_index = node_re_index[new_coll_edges]
+        collide_edge_features = self.collide_edge_features[new_coll_mask, :]
 
-        ori_align_edges = torch.tensor(self.align_edge_index)
-        new_align_mask = reduce(torch.logical_and, node_mask[ori_align_edges])
-        new_align_edges = ori_align_edges[:, new_align_mask]
+        if self.align_edge_index.size(-1):
+            ori_align_edges = self.align_edge_index
+            new_align_mask = reduce(torch.logical_and,
+                                    node_mask[ori_align_edges])
+            new_align_edges = ori_align_edges[:, new_align_mask]
 
-        align_edge_index = node_re_index[new_align_edges].cpu().numpy()
+            align_edge_index = node_re_index[new_align_edges]
+            align_edge_features = self.align_edge_features[new_align_mask, :]
+        else:
+            align_edge_index = torch.tensor([])
+            align_edge_features = torch.tensor([])
 
-        # feature
-        collide_edge_features = torch.tensor(
-            self.collide_edge_features)[new_coll_mask, :].cpu().numpy()
-        align_edge_features = torch.tensor(
-            self.align_edge_features)[new_align_mask, :].cpu().numpy()
-
-        if collide_edge_index.shape[1] == 0:
-            collide_edge_index = np.array([])
-            collide_edge_features = np.array([])
-        if align_edge_index.shape[1] == 0:
-            align_edge_index = np.array([])
-            align_edge_features = np.array([])
+        # if collide_edge_index.shape[1] == 0:
+        #     collide_edge_index = np.array([])
+        #     collide_edge_features = np.array([])
+        # if align_edge_index.shape[1] == 0:
+        #     align_edge_index = np.array([])
+        #     align_edge_features = np.array([])
 
         # print(node_feature.shape, collide_edge_index.shape,
         #       collide_edge_features.shape, align_edge_index.shape,
         #       align_edge_features.shape)
 
-        # compute index mapping from current index to original index
+        # compute index mapping from new index to original index
         node_inverse_index = {}
         for idx, key in enumerate(predict.unlabelled_nodes):
             node_inverse_index[idx] = key
 
         fixed_re_index = {}
         for i in range(node_feature.shape[0]):
-            fixed_re_index[self.inverse_index[node_inverse_index[i]]] = i
+            try:
+                fixed_re_index[self.inverse_index[node_inverse_index[i]]] = i
+            except KeyError as e:
+                print(e)
+                print(i, node_inverse_index[i])
+                raise e
 
         return BrickLayout(
             complete_graph,

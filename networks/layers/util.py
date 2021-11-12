@@ -38,13 +38,11 @@ class Linear_trans(nn.Module):
         super(Linear_trans, self).__init__()
         self.linear = nn.Linear(in_dim, out_dim)
         self.activation = activation
-        self.batch_norm = batch_norm
-        if self.batch_norm:
-            self.batch_norm = nn.BatchNorm1d(out_dim)
+        self.batch_norm = nn.BatchNorm1d(out_dim) if batch_norm else None
 
     def forward(self, x):
         x = self.linear(x)
-        if self.activation is not None:
+        if self.activation:
             x = self.activation(x)
         if self.batch_norm:
             x = self.batch_norm(x)
