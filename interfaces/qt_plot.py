@@ -8,6 +8,7 @@ import sys
 import numpy as np
 import interfaces.figure_config as fig_conf
 from tiling.contour import Contour
+from typing import Iterable, Tuple, Union
 
 
 class Plotter:
@@ -108,6 +109,39 @@ class Plotter:
         self.app.quit()
         del self.window
         del self.app
+
+    def draw_polys(self, file_path: str, contours: Iterable[ Tuple[ Union[str, Tuple[Tuple[float, ...], Tuple[Tuple[float, ...]]]],
+                                                                       np.ndarray]]):
+        """
+        draw the given contours and save to an image file
+        :param file_path: the path to the image file to save
+        :param contours: (color option, contour) of the contours to draw
+        :return: None
+        """
+        if len(contours) == 0:
+            print("Nothing to plot.")
+            return
+        else:
+            print(f'saving file {file_path}...')
+        # get scale and translate
+        scale, translate = get_scale_translation_polygons([contour for _, contour in contours], self.window)
+
+        # set up attributes
+        self.window.polygons = [self.create_polygon(contour * scale + translate) for _, contour in contours]
+
+        ### get brushes
+        self.window.brushes = [self.brushes[config] if isinstance(config, str)
+                                else QtGui.QBrush(QtGui.QColor(*config[0]))
+                                for config, _ in contours]
+
+        ### get pen and change the width
+        self.window.pens = [self.pens[config] if isinstance(config, str)
+                            else QtGui.QPen(QtGui.QColor(*config[1]))
+                            for config, _ in contours]
+        for pen in self.window.pens:
+            pen.setWidth(fig_conf.edge_width)
+        self.window.setStyleSheet('background-color: white;')
+        self._save_canvas(file_path)
 
 
 class PlotterWindow(QtWidgets.QWidget):

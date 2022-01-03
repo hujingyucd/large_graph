@@ -5,6 +5,7 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 
 from selector.selection_solve import solve_by_sample_selection
+from selector.crop_solve import solve_by_crop
 from solver.MIS.base_solver import BaseSolver
 from interfaces.qt_plot import Plotter
 from sampler.base_sampler import Sampler
@@ -112,12 +113,27 @@ class SelectorTrainer():
             self.optimizer.zero_grad()
             self.network.train()
 
-            final_layout, prob_records, solutions = solve_by_sample_selection(
+            epoch_path = os.path.join(os.path.split(self.logger.handlers[0].baseFilename)[0], 'epoch{}'.format(i))
+            if not os.path.exists(epoch_path):
+                os.mkdir(epoch_path)
+            save_path = os.path.join(os.path.join(os.path.split(self.logger.handlers[0].baseFilename)[0], 'epoch{}'.format(i)),'data{}'.format(data.idx))
+            if not os.path.exists(save_path):
+                os.mkdir(save_path)
+
+            # final_layout, prob_records, solutions = solve_by_sample_selection(
+            #     data,
+            #     self.network,
+            #     self.solver,
+            #     self.sampler,
+            #     show_intermediate=True)
+
+            final_layout, prob_records, solutions = solve_by_crop(
                 data,
                 self.network,
                 self.solver,
                 self.sampler,
-                show_intermediate=True)
+                show_intermediate=True,
+                log_dir=save_path)
 
             # compute reward
             num_holes = final_layout.detect_holes()

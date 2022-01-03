@@ -35,6 +35,7 @@ class BrickLayout():
         self.collide_edge_features = collide_edge_features.float()
         self.align_edge_index = align_edge_index
         self.align_edge_features = align_edge_features.float()
+        self.tiles = None
 
         # assertion for brick_layout
         # align_edge_index_list = align_edge_index.T.tolist()
@@ -99,6 +100,7 @@ class BrickLayout():
         plotter.draw_contours(
             [tile.get_plot_attribute(style) for tile in selected_tiles],
             file_path=file_name)
+        return selected_tiles
 
     def show_predict(self,
                      plotter: Plotter,
@@ -113,8 +115,8 @@ class BrickLayout():
 
         # show cropped region
         super_contour_poly = self.get_super_contour_poly()
-        print('super_contour_poly area:')
-        print(super_contour_poly.area)
+        # print('super_contour_poly area:')
+        # print(super_contour_poly.area)
 
         super_contour_exteriors, super_contour_interiors = BrickLayout.get_polygon_plot_attr(
             super_contour_poly,
@@ -128,8 +130,8 @@ class BrickLayout():
         ]
 
         test = self.get_selected_tiles_union_polygon()
-        print('selected_tiles area:')
-        print(test.area)
+        # print('selected_tiles area:')
+        # print(test.area)
 
         img = plotter.draw_contours(
             tiling_region_exteriors + tiling_region_interiors +
