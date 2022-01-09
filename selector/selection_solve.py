@@ -6,6 +6,7 @@ from torch_geometric.utils import k_hop_subgraph, subgraph
 from sampler.base_sampler import Sampler
 from solver.MIS.base_solver import BaseSolver
 from tiling.brick_layout import BrickLayout
+from utils.graph_utils import count_components
 
 
 def solve_by_sample_selection(
@@ -54,6 +55,7 @@ def solve_by_sample_selection(
     except RuntimeError as e:
         print("data: ", getattr(full_graph, "idx", "unknown"))
         raise e
+    print("components: {}".format(count_components(sampled_edges)))
     sampled_node_ids = torch.arange(
         full_graph.node_feature.size(0))[sampled_node_mask]
 
@@ -77,8 +79,8 @@ def solve_by_sample_selection(
             probs = model(x=current_full_graph.node_feature[current_node_ids,
                                                             -1:],
                           col_e_idx=current_edges)
-            prob_records.append(torch.max(probs).unsqueeze(0))
-            selected_node = torch.argmax(probs)
+            selected_node = torch.multinomial(probs.squeeze(), 1)
+            prob_records.append(probs[selected_node])
 
         original_node_id = current_node_ids[selected_node]
 
