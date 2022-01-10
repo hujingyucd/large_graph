@@ -121,7 +121,7 @@ if __name__ == "__main__":
             gnn.parameters(),
             eps=1e-4,
             lr=config["selector"]["training"]["optimizer"]["lr"]),
-        sampler=RandomWalkSampler(),
+        sampler=RandomWalkSampler(rw_length=10, node_budget=300),
         solver=solver,
         writer=SummaryWriter(
             log_dir=config["selector"]["training"]["log_dir"]),

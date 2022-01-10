@@ -1,17 +1,20 @@
+from typing import List, Generator
 import os
 import logging
 import random
 import torch
 from torch.utils.tensorboard import SummaryWriter
 
-from selector.selection_solve import solve_by_sample_selection
 from selector.crop_solve import solve_by_crop
 from solver.MIS.base_solver import BaseSolver
 from interfaces.qt_plot import Plotter
 from sampler.base_sampler import Sampler
+# from tiling.brick_layout import BrickLayout
+# from utils.graph_utils import count_components
 
 
 class SelectorTrainer():
+
     def __init__(self,
                  network,
                  dataset_train,
@@ -38,10 +41,6 @@ class SelectorTrainer():
 
         self.dataset_train = dataset_train
         self.dataset_test = dataset_test
-        self.loader_train = (self.dataset_train[i] for i in random.sample(
-            range(len(self.dataset_train)), len(self.dataset_train)))
-        self.loader_test = (self.dataset_train[i] for i in random.sample(
-            range(len(self.dataset_train)), len(self.dataset_train)))
 
         self.total_train_epoch = total_train_epoch
         self.save_model_per_epoch = save_model_per_epoch
@@ -102,68 +101,103 @@ class SelectorTrainer():
                                   "optimizer_{}.pth".format(self.epoch))
         self.optimizer.load_state_dict(torch.load(optim_path))
 
+    @staticmethod
+    def create_loader(dataset,
+                      batch_size: int = 1,
+                      shuffle: bool = True) -> Generator[List, None, None]:
+        sequence = random.sample(range(len(dataset)),
+                                 len(dataset)) if shuffle else list(
+                                     range(len(dataset)))
+        while len(sequence) % batch_size:
+            sequence.append(0)
+        for i in range(0, len(sequence), batch_size):
+            yield [dataset[idx] for idx in sequence[i:i + batch_size]]
+
     def train_single_epoch(self, plotter: Plotter = None):
         i = self.epoch
         self.logger.info("training epoch {} start".format(i))
         torch.cuda.empty_cache()
         train_metrics = {"holes": [], "loss": []}
         self.network.train()
-        for idx, data in enumerate(self.loader_train):
-            log_items = [str(i), str(idx), "data {}".format(data.idx)]
+        for idx, batch in enumerate(self.loader_train):
             self.optimizer.zero_grad()
-            self.network.train()
+            batch_probs = []
+            batch_rewards = []
+            for data in batch:
+                # visualize sampled graph
+                # try:
+                #     sampled_edges, sampled_node_mask = self.sampler(
+                #         data.collide_edge_index)
+                # except runtimeerror as e:
+                #     print("data: ", getattr(data, "idx", "unknown"))
+                #     raise e
+                # sampled_node_ids = torch.arange(
+                #     data.node_feature.size(0))[sampled_node_mask]
+                # queried_subgraph = BrickLayout(
+                #     complete_graph=data.complete_graph,
+                #     node_feature=data.node_feature[sampled_node_ids],
+                #     collide_edge_index=sampled_edges,
+                #     collide_edge_features=torch.tensor([[]]),
+                #     align_edge_index=torch.tensor([[], []]),
+                #     align_edge_features=torch.tensor([[]]),
+                #     re_index={
+                #         data.inverse_index[k.item()]: i
+                #         for i, k in enumerate(sampled_node_ids)
+                #     })
+                # queried_subgraph.show_candidate_tiles(
+                #     plotter, "{}_sampled.png".format(data.idx))
+                # data.show_candidate_tiles(plotter,
+                #                           "{}_ori.png".format(data.idx))
 
-            epoch_path = os.path.join(os.path.split(self.logger.handlers[0].baseFilename)[0], 'epoch{}'.format(i))
-            if not os.path.exists(epoch_path):
-                os.mkdir(epoch_path)
-            save_path = os.path.join(os.path.join(os.path.split(self.logger.handlers[0].baseFilename)[0], 'epoch{}'.format(i)),'data{}'.format(data.idx))
-            if not os.path.exists(save_path):
-                os.mkdir(save_path)
+                # continue
 
-            # final_layout, prob_records, solutions = solve_by_sample_selection(
-            #     data,
-            #     self.network,
-            #     self.solver,
-            #     self.sampler,
-            #     show_intermediate=True)
+                log_items = [str(i), str(idx), "data {}".format(data.idx)]
 
-            final_layout, prob_records, solutions = solve_by_crop(
-                data,
-                self.network,
-                self.solver,
-                self.sampler,
-                show_intermediate=True,
-                log_dir=save_path)
+                final_layout, prob_records, solutions = solve_by_crop(
+                    data,
+                    self.network,
+                    self.solver,
+                    self.sampler,
+                    show_intermediate=bool(plotter))
 
-            # compute reward
-            num_holes = final_layout.detect_holes()
-            log_items.append("holes: {}".format(num_holes))
-            train_metrics["holes"].append(num_holes)
-            reward = -1 - num_holes
+                # compute reward
+                num_holes = final_layout.detect_holes()
+                log_items.append("holes: {}".format(num_holes))
+                train_metrics["holes"].append(num_holes)
+                reward = -1 - num_holes
+                batch_rewards.append(reward)
 
-            # compute loss and optimize
-            loss_reward = -reward * prob_records.log().sum()
-            log_items.append("loss: {}".format(loss_reward.item()))
-            train_metrics["loss"].append(loss_reward.item())
+                batch_probs.append(prob_records.log().sum().unsqueeze(0))
+                # loss_reward = -reward * prob_records.log().sum()
+                # batch_loss.append(loss_reward)
+                self.logger.debug(", ".join(log_items))
 
-            # debugging
-            if data.idx < 3:
-                for step, sol in enumerate(solutions):
-                    final_layout.predict = sol
-                    _ = final_layout.show_predict(
-                        plotter=plotter,
-                        file_name=os.path.join(
-                            os.path.split(
-                                self.logger.handlers[0].baseFilename)[0],
-                            "epoch{}_data{}_step{}.png".format(
-                                i, data.idx, step)),
-                        do_show_super_contour=True,
-                        do_show_tiling_region=True)
+                # debugging
+                if data.idx < 30 and plotter:
+                    for step, sol in enumerate(solutions):
+                        final_layout.predict = sol
+                        _ = final_layout.show_predict(
+                            plotter=plotter,
+                            file_name=os.path.join(
+                                os.path.split(
+                                    self.logger.handlers[0].baseFilename)[0],
+                                "epoch{}_data{}_step{}.png".format(
+                                    i, data.idx, step)),
+                            do_show_super_contour=True,
+                            do_show_tiling_region=True)
 
-            loss_reward.backward()
+            # compute baseline of rewards to reduce variance
+            rewards = torch.tensor(batch_rewards,
+                                   dtype=torch.float,
+                                   device=self.device)
+            rewards = rewards - rewards.mean()
+            batch_loss = (torch.cat(batch_probs).to(self.device) *
+                          rewards).mean()
+            batch_loss.backward()
             self.optimizer.step()
 
-            self.logger.debug(", ".join(log_items))
+            train_metrics["loss"].append(batch_loss.item())
+            self.logger.debug("batch loss: {}".format(batch_loss.item()))
 
         for key, vs in train_metrics.items():
             self.writer.add_scalar("train/{}".format(key),
@@ -183,10 +217,10 @@ class SelectorTrainer():
     def train(self, plotter: Plotter = None):
         self.logger.info("training start")
         while self.epoch < self.total_train_epoch:
-            self.loader_train = (self.dataset_train[i] for i in random.sample(
-                range(len(self.dataset_train)), len(self.dataset_train)))
-            self.loader_test = (self.dataset_train[i] for i in random.sample(
-                range(len(self.dataset_train)), len(self.dataset_train)))
+            self.loader_train = SelectorTrainer.create_loader(
+                self.dataset_train, 20)
+            self.loader_test = SelectorTrainer.create_loader(
+                self.dataset_test, 1)
             try:
                 self.train_single_epoch(plotter)
             except Exception as e:
