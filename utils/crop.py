@@ -29,7 +29,7 @@ def generate_brick_layout_data(graph: BrickLayout, super_tiles: list,
     node_feature = torch.zeros((len(super_tiles), graph.node_feature.size(1)))
     for i, tile_idx in enumerate(super_tiles):
         current_tile = graph.tiles[tile_idx]
-        node_feature[i][current_tile.id] = 1
+        # node_feature[i][current_tile.id] = 1
         node_feature[i][-1] = current_tile.area() / max(
             [t.area() for t in graph.tiles])
 
@@ -75,7 +75,7 @@ def get_all_placement_in_polygon(graph: BrickLayout, polygon: Polygon):
     filtered_collided_edges = torch.transpose(filtered_collided_edges, 0, 1)
     filtered_adj_edges = torch.transpose(filtered_adj_edges, 0, 1)
 
-    assert len(sub_nodes) != 0
+    # assert len(sub_nodes) != 0
 
     return (tiles_super_set, filtered_collided_edges, filtered_adj_edges,
             collide_edge_mask, adj_edge_mask, torch.tensor(sub_nodes))
@@ -115,57 +115,50 @@ def crop_2d_circle(node,
                    low=0.2,
                    high=0.7,
                    plotter=None,
-                   debugger=None,
                    plot_shape=False):
 
     # try until can create
     count = 0
     while True:
-        try:
-            count += 1
-            if count > 10:
-                return None, None, None, None, None, None, None
-            x_min, x_max, y_min, y_max = get_graph_bound(graph)
-            base_radius = min(x_max - x_min, y_max - y_min) / 2
-            radius_random = random.uniform(low, high)
-            # irregularity = random.random()
-            # spikeyness = random.random()
-            irregularity = 0
-            spikeyness = 0
-            number_of_vertices = random.randint(3, max_vertices)
+        count += 1
+        if count > 10:
+            return None, None, None, None, None, None, None
+        x_min, x_max, y_min, y_max = get_graph_bound(graph)
+        base_radius = min(x_max - x_min, y_max - y_min) / 2
+        radius_random = random.uniform(low, high)
+        # irregularity = random.random()
+        # spikeyness = random.random()
+        irregularity = 0
+        spikeyness = 0
+        number_of_vertices = random.randint(3, max_vertices)
 
-            tile = graph.tiles[node]
-            cords = np.array(tile.tile_poly.exterior.coords)
-            node_x_min = np.min(cords[:, 0])
-            node_x_max = np.max(cords[:, 0])
-            node_y_min = np.min(cords[:, 1])
-            node_y_max = np.max(cords[:, 1])
+        tile = graph.tiles[node]
+        cords = np.array(tile.tile_poly.exterior.coords)
+        node_x_min = np.min(cords[:, 0])
+        node_x_max = np.max(cords[:, 0])
+        node_y_min = np.min(cords[:, 1])
+        node_y_max = np.max(cords[:, 1])
 
-            # generation of the random polygon
-            vertices = generatePolygon(
-                (node_x_min + node_x_max) / 2, (node_y_min + node_y_max) / 2,
-                base_radius * radius_random, irregularity, spikeyness,
-                number_of_vertices)
-            polygon = Polygon(vertices)
+        # generation of the random polygon
+        vertices = generatePolygon(
+            (node_x_min + node_x_max) / 2, (node_y_min + node_y_max) / 2,
+            base_radius * radius_random, irregularity, spikeyness,
+            number_of_vertices)
+        polygon = Polygon(vertices)
 
-            if plot_shape:
-                assert plotter is not None
-                # assert debugger is not None
-                plotter.draw_polys('./polys/generated_shape.png',
-                                   [('green', np.array(vertices))])
+        if plot_shape:
+            assert plotter is not None
+            plotter.draw_polys('./polys/generated_shape.png',
+                               [('green', np.array(vertices))])
 
-            (node_feature, collide_edge_index, collide_edge_features,
-             align_edge_index, align_edge_features, re_index,
-             sub_nodes) = create_brick_layout_from_polygon(graph, polygon)
+        (node_feature, collide_edge_index, collide_edge_features,
+         align_edge_index, align_edge_features, re_index,
+         sub_nodes) = create_brick_layout_from_polygon(graph, polygon)
 
-            # skip
-            if len(collide_edge_index) == 0:
-                print("skip")
-                continue
-
-            return (node_feature, collide_edge_index, collide_edge_features,
-                    align_edge_index, align_edge_features, re_index, sub_nodes)
-        except Exception as e:
-            # print(traceback.format_exc())
-            print(e)
+        # skip
+        if len(collide_edge_index) == 0:
+            print("skip")
             continue
+
+        return (node_feature, collide_edge_index, collide_edge_features,
+                align_edge_index, align_edge_features, re_index, sub_nodes)
