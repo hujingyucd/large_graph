@@ -5,7 +5,7 @@ import random
 import torch
 from torch.utils.tensorboard import SummaryWriter
 
-from selector.crop_solve import solve_by_crop
+from selector.selection_solve import solve_by_sample_selection
 from solver.MIS.base_solver import BaseSolver
 from interfaces.qt_plot import Plotter
 from sampler.base_sampler import Sampler
@@ -153,12 +153,13 @@ class SelectorTrainer():
 
                 log_items = [str(i), str(idx), "data {}".format(data.idx)]
 
-                final_layout, prob_records, solutions = solve_by_crop(
-                    data,
-                    self.network,
-                    self.solver,
-                    self.sampler,
-                    show_intermediate=bool(plotter))
+                (final_layout, prob_records,
+                 solutions) = solve_by_sample_selection(
+                     data,
+                     self.network,
+                     self.solver,
+                     self.sampler,
+                     show_intermediate=bool(plotter))
 
                 # compute reward
                 num_holes = final_layout.detect_holes()

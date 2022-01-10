@@ -1,12 +1,12 @@
 from typing import Tuple, List
 import torch
 import numpy as np
-from torch_geometric.utils import k_hop_subgraph, subgraph
+from torch_geometric.utils import subgraph
 
 from sampler.base_sampler import Sampler
 from solver.MIS.base_solver import BaseSolver
 from tiling.brick_layout import BrickLayout
-from utils.graph_utils import count_components
+from utils.crop import crop_2d_circle
 
 
 def solve_by_sample_selection(
@@ -49,13 +49,14 @@ def solve_by_sample_selection(
         node id relabelled from 0 to current |V|
     '''
 
+    full_graph.update_tiles()
+
     try:
         sampled_edges, sampled_node_mask = sampler(
             full_graph.collide_edge_index)
     except RuntimeError as e:
         print("data: ", getattr(full_graph, "idx", "unknown"))
         raise e
-    print("components: {}".format(count_components(sampled_edges)))
     sampled_node_ids = torch.arange(
         full_graph.node_feature.size(0))[sampled_node_mask]
 
@@ -87,18 +88,31 @@ def solve_by_sample_selection(
         # get BFS subgraph from current full graph
         current_full_edges = current_full_graph.collide_edge_index
         # print("current full edges", current_full_edges.size())
-        sub_nodes, sub_edges, _, edge_masks = k_hop_subgraph(
-            original_node_id.item(),
-            3,
+        # sub_nodes, sub_edges, _, edge_masks = k_hop_subgraph(
+        #     original_node_id.item(),
+        #     3,
+        #     current_full_edges,
+        #     relabel_nodes=True,
+        #     num_nodes=current_full_graph.node_feature.size(0))
+        (_, collide_edge_index, collide_edge_features, _, _, _,
+         sub_nodes) = crop_2d_circle(original_node_id.item(),
+                                     current_full_graph,
+                                     20,
+                                     low=0.5,
+                                     high=0.7)
+        assert sub_nodes is not None
+        sub_edges, sub_edge_features = subgraph(
+            sub_nodes,
             current_full_edges,
+            current_full_graph.collide_edge_features,
             relabel_nodes=True,
             num_nodes=current_full_graph.node_feature.size(0))
+
         queried_subgraph = BrickLayout(
             complete_graph=full_graph.complete_graph,
             node_feature=current_full_graph.node_feature[sub_nodes],
             collide_edge_index=sub_edges,
-            collide_edge_features=current_full_graph.
-            collide_edge_features[edge_masks],
+            collide_edge_features=sub_edge_features,
             align_edge_index=torch.tensor([[], []]),
             align_edge_features=torch.tensor([[]]),
             re_index={
@@ -170,6 +184,7 @@ def solve_by_sample_selection(
                 for k, v in current_full_graph.re_index.items()
                 if remaining_nodes[v]
             })
+        current_full_graph.update_tiles()
 
         # update current_node_ids and current_edges
         remaining_sampled_node_mask = remaining_nodes[current_node_ids]

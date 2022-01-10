@@ -107,9 +107,7 @@ def solve_by_crop(
                                  20,
                                  low=0.5,
                                  high=0.7)
-        if nodes is None:
-            break
-
+        assert nodes is not None
         # reindex
         col, row = current_full_graph.collide_edge_index
         num_nodes = current_full_graph.node_feature.size(0)
