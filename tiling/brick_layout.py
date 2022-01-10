@@ -101,7 +101,6 @@ class BrickLayout():
         plotter.draw_contours(
             [tile.get_plot_attribute(style) for tile in selected_tiles],
             file_path=file_name)
-        return selected_tiles
 
     def show_predict(self,
                      plotter: Plotter,
@@ -449,6 +448,12 @@ class BrickLayout():
             align_edge_features,
             fixed_re_index,
             target_polygon=self.target_polygon), node_inverse_index
+
+    def update_tiles(self):
+        tiles = self.complete_graph.tiles
+        selected_indices = [k for k in self.re_index.keys()]
+        selected_tiles = [tiles[s] for s in selected_indices]
+        self.tiles = selected_tiles
 
     @staticmethod
     def assert_equal_layout(brick_layout_1, brick_layout_2):

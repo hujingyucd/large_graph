@@ -1,34 +1,25 @@
 from typing import Tuple, List
 import torch
 import numpy as np
-import os
-import glob
-import random
-from collections import defaultdict
-from torch_geometric.utils import k_hop_subgraph, subgraph
+# import os
+from torch_geometric.utils import subgraph
 
 from sampler.base_sampler import Sampler
 from solver.MIS.base_solver import BaseSolver
 from tiling.brick_layout import BrickLayout
 from interfaces.qt_plot import Plotter
-import tiling.tile_factory as factory
-from tiling.tile_graph import TileGraph
-from tiling.tile import Tile
-from shapely.geometry import Polygon
-from utils.shape_processor import getSVGShapeAsNp
-from tiling.tile_factory import generatePolygon
-from utils.algo_util import contain
-from utils.crop import generate_random_inputs
+from utils.crop import crop_2d_circle
 
 plotter = Plotter()
 
+
 def solve_by_crop(
-        full_graph: BrickLayout,
-        model: torch.nn.Module,
-        solver: BaseSolver,
-        sampler: Sampler,
-        show_intermediate: bool = False,
-        log_dir: str = None,
+    full_graph: BrickLayout,
+    model: torch.nn.Module,
+    solver: BaseSolver,
+    sampler: Sampler,
+    show_intermediate: bool = False,
+    log_dir: str = None,
 ) -> Tuple[BrickLayout, torch.Tensor, List]:
     r"""
     full_graph: original full graph
@@ -63,15 +54,17 @@ def solve_by_crop(
         node id relabelled from 0 to current |V|
     '''
     # make dir
-    tile_path = os.path.join(log_dir,'candidate_tiles')
-    if not os.path.exists(tile_path):
-                os.mkdir(tile_path)
-    step_path = os.path.join(log_dir,'steps')
-    if not os.path.exists(step_path):
-                os.mkdir(step_path)
+    # tile_path = os.path.join(log_dir, 'candidate_tiles')
+    # if not os.path.exists(tile_path):
+    #     os.mkdir(tile_path)
+    # step_path = os.path.join(log_dir, 'steps')
+    # if not os.path.exists(step_path):
+    #     os.mkdir(step_path)
 
-    full_tiles = full_graph.show_candidate_tiles(plotter, os.path.join(log_dir, f'candidate_tiles.png'))
-    full_graph.tiles = full_tiles
+    # full_tiles = full_graph.show_candidate_tiles(
+    #     plotter, os.path.join(log_dir, 'candidate_tiles.png'))
+    # full_graph.tiles = full_tiles
+    full_graph.update_tiles()
 
     try:
         sampled_edges, sampled_node_mask = sampler(
@@ -79,7 +72,8 @@ def solve_by_crop(
     except RuntimeError as e:
         print("data: ", getattr(full_graph, "idx", "unknown"))
         raise e
-    sampled_node_ids = torch.arange(full_graph.node_feature.size(0))[sampled_node_mask]
+    sampled_node_ids = torch.arange(
+        full_graph.node_feature.size(0))[sampled_node_mask]
     current_full_graph = full_graph
     current_node_ids = sampled_node_ids
     current_edges = sampled_edges
@@ -98,20 +92,27 @@ def solve_by_crop(
         if current_node_ids.size(0) == 1:
             selected_node = torch.tensor(0)
         else:
-            probs = model(x=current_full_graph.node_feature[current_node_ids, -1:], col_e_idx=current_edges)
+            probs = model(x=current_full_graph.node_feature[current_node_ids,
+                                                            -1:],
+                          col_e_idx=current_edges)
             prob_records.append(torch.max(probs).unsqueeze(0))
             selected_node = torch.argmax(probs)
         original_node_id = current_node_ids[selected_node]
 
         current_full_edges = current_full_graph.collide_edge_index
         # print(len(current_full_graph.tiles))
-        node_feature, collide_edge_index, collide_edge_features, align_edge_index, align_edge_features, re_index, nodes = generate_random_inputs(original_node_id.item(), current_full_graph, 20, low=0.5, high=0.7)
-        if nodes == None:
+        (_, collide_edge_index, collide_edge_features, _, _, _,
+         nodes) = crop_2d_circle(original_node_id.item(),
+                                 current_full_graph,
+                                 20,
+                                 low=0.5,
+                                 high=0.7)
+        if nodes is None:
             break
 
         # reindex
         col, row = current_full_graph.collide_edge_index
-        num_nodes=current_full_graph.node_feature.size(0)
+        num_nodes = current_full_graph.node_feature.size(0)
         node_idx = row.new_full((num_nodes, ), -1)
         node_idx[nodes] = torch.arange(nodes.size(0), device=row.device)
         collide_edge_index = node_idx[collide_edge_index]
@@ -124,19 +125,19 @@ def solve_by_crop(
             align_edge_index=torch.tensor([[], []]),
             align_edge_features=torch.tensor([[]]),
             re_index={
-                    current_full_graph.inverse_index[k.item()]: i
-                    for i, k in enumerate(nodes)
-        })
+                current_full_graph.inverse_index[k.item()]: i
+                for i, k in enumerate(nodes)
+            })
 
         # solve cropped subgraph
         result, score = solver.solve(queried_subgraph)
 
-        result.predict_probs = result.predict
-        result.show_predict(
-            plotter,
-            os.path.join(step_path, f'step_{step}_{score}_predict.png'),
-            do_show_super_contour=True,
-            do_show_tiling_region=True)
+        # result.predict_probs = result.predict
+        # result.show_predict(plotter,
+        #                     os.path.join(step_path,
+        #                                  f'step_{step}_{score}_predict.png'),
+        #                     do_show_super_contour=True,
+        #                     do_show_tiling_region=True)
 
         # selected node ids in complete graph
         # keep this for final reward calculation
@@ -200,8 +201,11 @@ def solve_by_crop(
                 for k, v in current_full_graph.re_index.items()
                 if remaining_nodes[v]
             })
-        full_tiles = current_full_graph.show_candidate_tiles(plotter, os.path.join(tile_path, f'step_{step}_candidate_tiles.png'))
-        current_full_graph.tiles = full_tiles
+        # full_tiles = current_full_graph.show_candidate_tiles(
+        #     plotter, os.path.join(tile_path,
+        #                           f'step_{step}_candidate_tiles.png'))
+        # current_full_graph.tiles = full_tiles
+        current_full_graph.update_tiles()
 
         # update current_node_ids and current_edges
         remaining_sampled_node_mask = remaining_nodes[current_node_ids]
@@ -213,29 +217,29 @@ def solve_by_crop(
             relabel_nodes=True,
             num_nodes=remaining_sampled_node_mask.size(0))
         step += 1
-    
-    # final solve
-    result, score = solver.solve(current_full_graph)
-    result.predict_probs = result.predict
-    result.show_predict(
-        plotter,
-        os.path.join(step_path, f'step_{step}_{score}_predict.png'),
-        do_show_super_contour=True,
-        do_show_tiling_region=True)
-    solution_complete_ids = [
-            result.inverse_index[n.item()]
-            for n in torch.arange(current_full_graph.node_feature.size(0))[
-                torch.tensor(result.predict, dtype=torch.bool)]
-        ]
 
-    final_complete_solution += solution_complete_ids
-    if show_intermediate:
-        temp_solution = np.zeros(full_graph.node_feature.size(0),
-                                    dtype=np.int32)
-        for i in final_complete_solution:
-            temp_solution[full_graph.re_index[i]] = 1
-        intermediate_results.append(temp_solution)
-    
+    # final solve
+    # result, score = solver.solve(current_full_graph)
+    # result.predict_probs = result.predict
+    # result.show_predict(plotter,
+    #                     os.path.join(step_path,
+    #                                  f'step_{step}_{score}_predict.png'),
+    #                     do_show_super_contour=True,
+    #                     do_show_tiling_region=True)
+    # solution_complete_ids = [
+    #     result.inverse_index[n.item()]
+    #     for n in torch.arange(current_full_graph.node_feature.size(0))[
+    #         torch.tensor(result.predict, dtype=torch.bool)]
+    # ]
+
+    # final_complete_solution += solution_complete_ids
+    # if show_intermediate:
+    #     temp_solution = np.zeros(full_graph.node_feature.size(0),
+    #                              dtype=np.int32)
+    #     for i in final_complete_solution:
+    #         temp_solution[full_graph.re_index[i]] = 1
+    #     intermediate_results.append(temp_solution)
+
     # final output
     final_result_layout = full_graph
     final_solution = np.zeros(final_result_layout.node_feature.size(0),
