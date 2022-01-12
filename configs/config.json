@@ -49,7 +49,8 @@
             "depth": 10,
             "width": 32,
             "output_dim": 1
-        }
+        },
+        "solve_method": "onetime"
     },
     "tiling": {
         "complete_graph_path": "./data/complete_graph_ring10.pkl",
