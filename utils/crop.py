@@ -26,15 +26,15 @@ def generate_brick_layout_data(graph: BrickLayout, super_tiles: list,
         re_index[super_tiles[i]] = i
 
     # node feature
-    node_feature = torch.zeros((len(super_tiles), graph.node_feature.size(1)))
-    for i, tile_idx in enumerate(super_tiles):
-        current_tile = graph.tiles[tile_idx]
-        # node_feature[i][current_tile.id] = 1
-        node_feature[i][-1] = current_tile.area() / max(
-            [t.area() for t in graph.tiles])
+    # node_feature = torch.zeros((len(super_tiles), graph.node_feature.size(1)))
+    # for i, tile_idx in enumerate(super_tiles):
+    #     current_tile = graph.tiles[tile_idx]
+    #     # node_feature[i][current_tile.id] = 1
+    #     node_feature[i][-1] = current_tile.area() / max(
+    #         [t.area() for t in graph.tiles])
 
-    return (node_feature, collide_edges, super_edge_features_collide,
-            adj_edges, super_edge_features_adj, re_index)
+    return (None, collide_edges, super_edge_features_collide, adj_edges,
+            super_edge_features_adj, re_index)
 
 
 def get_all_placement_in_polygon(graph: BrickLayout, polygon: Polygon):
