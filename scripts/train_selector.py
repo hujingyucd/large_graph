@@ -78,7 +78,10 @@ if __name__ == "__main__":
     from solver.ml_solver import MLSolver
     from tiling.tile_graph import TileGraph
 
-    solver = MLSolver(device=device, network=gnn, trainer=trainer)
+    solver = MLSolver(device=device,
+                      network=gnn,
+                      trainer=trainer,
+                      solve_method=config["solver"]["solve_method"])
     solver.network.eval()
 
     complete_graph = TileGraph(config['tiling']['tile_count'])
@@ -121,7 +124,7 @@ if __name__ == "__main__":
             gnn.parameters(),
             eps=1e-4,
             lr=config["selector"]["training"]["optimizer"]["lr"]),
-        sampler=RandomWalkSampler(),
+        sampler=RandomWalkSampler(rw_length=10, node_budget=300),
         solver=solver,
         writer=SummaryWriter(
             log_dir=config["selector"]["training"]["log_dir"]),

@@ -19,6 +19,7 @@ SIMPLIFIED_TILE_EPS = BUFFER_TILE_EPS * 1e3
 
 
 class BrickLayout():
+
     def __init__(self,
                  complete_graph: TileGraph,
                  node_feature: torch.Tensor,
@@ -35,6 +36,7 @@ class BrickLayout():
         self.collide_edge_features = collide_edge_features.float()
         self.align_edge_index = align_edge_index
         self.align_edge_features = align_edge_features.float()
+        self.tiles = None
 
         # assertion for brick_layout
         # align_edge_index_list = align_edge_index.T.tolist()
@@ -108,17 +110,19 @@ class BrickLayout():
         tiles = self.predict
 
         # show input polygon
-        tiling_region_exteriors, tiling_region_interiors = BrickLayout.get_polygon_plot_attr(
-            self.target_polygon) if do_show_tiling_region else ([], [])
+        (tiling_region_exteriors,
+         tiling_region_interiors) = BrickLayout.get_polygon_plot_attr(
+             self.target_polygon) if do_show_tiling_region else ([], [])
 
         # show cropped region
         super_contour_poly = self.get_super_contour_poly()
-        print('super_contour_poly area:')
-        print(super_contour_poly.area)
+        # print('super_contour_poly area:')
+        # print(super_contour_poly.area)
 
-        super_contour_exteriors, super_contour_interiors = BrickLayout.get_polygon_plot_attr(
-            super_contour_poly,
-            style='lightblue') if do_show_super_contour else ([], [])
+        (super_contour_exteriors,
+         super_contour_interiors) = BrickLayout.get_polygon_plot_attr(
+             super_contour_poly,
+             style='lightblue') if do_show_super_contour else ([], [])
         # show selected tiles
         assert self.complete_graph.tiles is not None
         selected_tiles = [
@@ -127,9 +131,9 @@ class BrickLayout():
             for i in range(len(tiles)) if tiles[i] == 1
         ]
 
-        test = self.get_selected_tiles_union_polygon()
-        print('selected_tiles area:')
-        print(test.area)
+        # test = self.get_selected_tiles_union_polygon()
+        # print('selected_tiles area:')
+        # print(test.area)
 
         img = plotter.draw_contours(
             tiling_region_exteriors + tiling_region_interiors +
@@ -139,8 +143,9 @@ class BrickLayout():
 
     def show_super_contour(self, plotter: Plotter, file_name):
         super_contour_poly = self.get_super_contour_poly()
-        exteriors_contour_list, interiors_list = BrickLayout.get_polygon_plot_attr(
-            super_contour_poly, show_line=True)
+        (exteriors_contour_list,
+         interiors_list) = BrickLayout.get_polygon_plot_attr(
+             super_contour_poly, show_line=True)
         plotter.draw_contours(exteriors_contour_list + interiors_list,
                               file_name)
 
@@ -225,8 +230,9 @@ class BrickLayout():
             [127, 127, 127, 255])
 
         super_contour_poly = self.get_super_contour_poly()
-        exteriors_contour_list, interiors_list = BrickLayout.get_polygon_plot_attr(
-            super_contour_poly, show_line=True)
+        (exteriors_contour_list,
+         interiors_list) = BrickLayout.get_polygon_plot_attr(
+             super_contour_poly, show_line=True)
 
         # sort by prob
         sorted_indices = np.argsort(self.predict_probs)
@@ -341,7 +347,8 @@ class BrickLayout():
     #     collide_edge_features = torch.from_numpy(
     #         collide_edge_features).float().to(device)
 
-    #     return x, adj_edge_index, adj_edge_features, collide_edge_index, collide_edge_features
+    #     return (x, adj_edge_index, adj_edge_features, collide_edge_index,
+    #             collide_edge_features)
 
     def get_data_as_torch_tensor(self, device):
         x = self.node_feature.to(
@@ -350,15 +357,18 @@ class BrickLayout():
         adj_edge_index = self.align_edge_index.to(
             device
         ) if self.align_edge_index.device != device else self.align_edge_index
-        adj_edge_features = self.align_edge_features.to(device).float(
-        ) if self.align_edge_features.device != device else self.align_edge_features
-        collide_edge_index = self.collide_edge_index.to(
-            device
-        ) if self.collide_edge_index.device != device else self.collide_edge_index
-        collide_edge_features = self.collide_edge_features.to(device).float(
-        ) if self.collide_edge_features.device != device else self.collide_edge_features
-
-        return x, adj_edge_index, adj_edge_features, collide_edge_index, collide_edge_features
+        adj_edge_features = self.align_edge_features
+        if self.align_edge_features != device:
+            adj_edge_features = self.align_edge_features.to(device).float()
+        collide_edge_index = self.collide_edge_index
+        if self.collide_edge_index.device != device:
+            collide_edge_index = self.collide_edge_index.to(device)
+        collide_edge_features = self.collide_edge_features
+        if self.collide_edge_features.device != device:
+            collide_edge_features = self.collide_edge_features.to(
+                device).float()
+        return (x, adj_edge_index, adj_edge_features, collide_edge_index,
+                collide_edge_features)
 
     def compute_sub_layout(self, predict):
         assert len(self.node_feature) == len(predict.labelled_nodes) + len(
@@ -438,6 +448,12 @@ class BrickLayout():
             align_edge_features,
             fixed_re_index,
             target_polygon=self.target_polygon), node_inverse_index
+
+    def update_tiles(self):
+        tiles = self.complete_graph.tiles
+        selected_indices = [k for k in self.re_index.keys()]
+        selected_tiles = [tiles[s] for s in selected_indices]
+        self.tiles = selected_tiles
 
     @staticmethod
     def assert_equal_layout(brick_layout_1, brick_layout_2):

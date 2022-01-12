@@ -35,8 +35,13 @@ def get_all_tiles(base_tile: Tile, align_tile: Tile, integer_align):
                     base_edge_length = base_tile.get_edge_length(base_edge_idx)
                     tile_edge_length = align_tile.get_edge_length(
                         align_neighbor_idx)
-                    if abs(math.floor(base_edge_length / tile_edge_length + EPS) - base_edge_length / tile_edge_length) > EPS and \
-                       abs(math.floor(tile_edge_length / base_edge_length + EPS) - tile_edge_length / base_edge_length) > EPS:
+                    if abs(
+                            math.floor(base_edge_length / tile_edge_length +
+                                       EPS) -
+                            base_edge_length / tile_edge_length) > EPS and abs(
+                                math.floor(tile_edge_length /
+                                           base_edge_length + EPS) -
+                                tile_edge_length / base_edge_length) > EPS:
                         continue
 
                 new_tile = get_tile_instance(base_tile,
@@ -141,8 +146,9 @@ class TileGraph:
                         colli_area, align_length)
 
                     if align_length > 1e-6 and colli_area < 1e-6:
-                        tile_i_align, tile_j_align = tiling_util.polygon_align_type(
-                            center_tile, neigbor_tile)
+                        (tile_i_align,
+                         tile_j_align) = tiling_util.polygon_align_type(
+                             center_tile, neigbor_tile)
                     else:
                         tile_i_align, tile_j_align = 0, 0
                     edge_feature = self.to_edge_feature_new(
@@ -170,7 +176,8 @@ class TileGraph:
                         for u in unique_features:
                             assert len(u) == len(current_edge_feature)
 
-                        # ensure both of alignment and reflection do not exist in the list
+                        # ensure both of alignment and reflection
+                        # do not exist in the list
                         if not any(
                                 np.allclose(np.array(unique_feature),
                                             np.array(current_edge_feature),
@@ -243,8 +250,9 @@ class TileGraph:
 
             if edge_feature is not None:
                 if colli_area < 1e-6:
-                    tile_i_align, tile_j_align = tiling_util.polygon_align_type(
-                        self.tiles[i], self.tiles[j])
+                    (tile_i_align,
+                     tile_j_align) = tiling_util.polygon_align_type(
+                         self.tiles[i], self.tiles[j])
                 self._addEdge(i, j, edge_feature)
                 self._addEdge(j, i, reflected_feature)
 
@@ -301,8 +309,12 @@ class TileGraph:
             return list(keep_feature) + list(adj_feature)
         else:
             for idx, item in enumerate(self.unique_adj_features):
-                if np.allclose(np.array(input_adj_feature), np.array(item), atol=ONE_HOT_EPS) \
-                   or np.allclose(np.array(input_reflected_feature), np.array(item), atol=ONE_HOT_EPS):
+                if np.allclose(np.array(input_adj_feature),
+                               np.array(item),
+                               atol=ONE_HOT_EPS) or np.allclose(
+                                   np.array(input_reflected_feature),
+                                   np.array(item),
+                                   atol=ONE_HOT_EPS):
                     adj_feature[idx] = 1
                     return list(keep_feature) + list(adj_feature)
             # return None for non existing method
