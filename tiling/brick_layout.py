@@ -435,8 +435,9 @@ class BrickLayout():
             try:
                 fixed_re_index[self.inverse_index[node_inverse_index[i]]] = i
             except KeyError as e:
-                print(e)
-                print(i, node_inverse_index[i])
+                print("key error", e)
+                print("node id {}, node inverse index {}".format(
+                    i, node_inverse_index[i]))
                 raise e
 
         return BrickLayout(

@@ -94,12 +94,11 @@ def solve_by_sample_selection(
         #     current_full_edges,
         #     relabel_nodes=True,
         #     num_nodes=current_full_graph.node_feature.size(0))
-        (_, collide_edge_index, collide_edge_features, _, _, _,
-         sub_nodes) = crop_2d_circle(original_node_id.item(),
-                                     current_full_graph,
-                                     20,
-                                     low=0.5,
-                                     high=0.7)
+        sub_nodes = crop_2d_circle(original_node_id.item(),
+                                   current_full_graph,
+                                   20,
+                                   low=0.5,
+                                   high=0.7)
         assert sub_nodes is not None
         print(len(sub_nodes))
         sub_edges, sub_edge_features = subgraph(
