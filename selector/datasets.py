@@ -7,12 +7,15 @@ from utils.data_util import write_bricklayout
 from utils.data_util import load_bricklayout
 from tiling.brick_layout import BrickLayout
 from tiling.tile_graph import TileGraph
+from sampler.base_sampler import Sampler
 
 
 class SampleGraphDataset(Dataset):
+
     def __init__(self,
                  root,
                  complete_graph: TileGraph,
+                 sampler: Sampler = None,
                  device='cuda',
                  split="train",
                  subgraph_num=2000,
@@ -23,6 +26,7 @@ class SampleGraphDataset(Dataset):
         self.split = split
         self.subgraph_num = subgraph_num
         self.complete_graph = complete_graph
+        self.sampler = sampler
         self.device = device
         super(SampleGraphDataset, self).__init__(root, transform,
                                                  pre_transform)
@@ -86,6 +90,25 @@ class SampleGraphDataset(Dataset):
                 self.logger.debug("{}, node: {}, edge: {}".format(
                     target_path, len(data.node_feature),
                     data.collide_edge_index.size(1)))
+
+                if self.sampler:
+                    try:
+                        sampled_edges, sampled_node_mask = self.sampler(
+                            data.collide_edge_index)
+                    except RuntimeError as e:
+                        print(str(e), raw_path)
+                        raise e
+                    sampled_node_ids = torch.arange(
+                        data.node_feature.size(0))[sampled_node_mask]
+                    torch.save(
+                        {
+                            "node_ids": sampled_node_ids,
+                            "edges": sampled_edges
+                        },
+                        os.path.splitext(
+                            os.path.join(self.processed_dir, raw_path))[0] +
+                        "_sampled.pt")
+
                 write_bricklayout(*(os.path.split(target_path)), data)
             except Exception as e:
                 self.logger.error("{} {}".format(str(e), raw_path))
@@ -98,6 +121,12 @@ class SampleGraphDataset(Dataset):
                                     complete_graph=self.complete_graph,
                                     device=self.device)
             data.idx = idx
+            if self.sampler:
+                sampled_path = os.path.splitext(data_path)[0] + "_sampled.pt"
+                sampled_graph = torch.load(sampled_path,
+                                           map_location=self.device)
+                data.sampled_graph = tuple(
+                    [sampled_graph["edges"], sampled_graph["node_ids"]])
 
         except FileNotFoundError:
             if idx != 0:

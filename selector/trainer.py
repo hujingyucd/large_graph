@@ -124,42 +124,20 @@ class SelectorTrainer():
             batch_probs = []
             batch_rewards = []
             for data in batch:
-                # visualize sampled graph
-                # try:
-                #     sampled_edges, sampled_node_mask = self.sampler(
-                #         data.collide_edge_index)
-                # except runtimeerror as e:
-                #     print("data: ", getattr(data, "idx", "unknown"))
-                #     raise e
-                # sampled_node_ids = torch.arange(
-                #     data.node_feature.size(0))[sampled_node_mask]
-                # queried_subgraph = BrickLayout(
-                #     complete_graph=data.complete_graph,
-                #     node_feature=data.node_feature[sampled_node_ids],
-                #     collide_edge_index=sampled_edges,
-                #     collide_edge_features=torch.tensor([[]]),
-                #     align_edge_index=torch.tensor([[], []]),
-                #     align_edge_features=torch.tensor([[]]),
-                #     re_index={
-                #         data.inverse_index[k.item()]: i
-                #         for i, k in enumerate(sampled_node_ids)
-                #     })
-                # queried_subgraph.show_candidate_tiles(
-                #     plotter, "{}_sampled.png".format(data.idx))
-                # data.show_candidate_tiles(plotter,
-                #                           "{}_ori.png".format(data.idx))
-
-                # continue
-
                 log_items = [str(i), str(idx), "data {}".format(data.idx)]
 
-                (final_layout, prob_records,
-                 solutions) = solve_by_sample_selection(
-                     data,
-                     self.network,
-                     self.solver,
-                     self.sampler,
-                     show_intermediate=bool(plotter))
+                try:
+                    (final_layout, prob_records,
+                     solutions) = solve_by_sample_selection(
+                         data,
+                         self.network,
+                         self.solver,
+                         sampler=self.sampler,
+                         sampled_graph=getattr(data, "sampled_graph", tuple()),
+                         show_intermediate=bool(plotter))
+                except Exception as e:
+                    print("data {}, error {}".format(data.idx, e))
+                    raise e
 
                 # compute reward
                 num_holes = final_layout.detect_holes()
