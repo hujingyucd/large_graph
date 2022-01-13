@@ -92,7 +92,6 @@ def solve_by_sample_selection(
 
         # get BFS subgraph from current full graph
         current_full_edges = current_full_graph.collide_edge_index
-        # print("current full edges", current_full_edges.size())
         # sub_nodes, sub_edges, _, edge_masks = k_hop_subgraph(
         #     original_node_id.item(),
         #     3,
@@ -101,11 +100,10 @@ def solve_by_sample_selection(
         #     num_nodes=current_full_graph.node_feature.size(0))
         sub_nodes = crop_2d_circle(original_node_id.item(),
                                    current_full_graph,
-                                   20,
                                    low=0.5,
                                    high=0.7)
-        assert sub_nodes is not None
         print("size of queried subgraph", len(sub_nodes))
+
         sub_edges, sub_edge_features = subgraph(
             sub_nodes,
             current_full_edges,

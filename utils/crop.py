@@ -59,16 +59,15 @@ def get_graph_bound(graph: BrickLayout):
 
 def crop_2d_circle(node,
                    graph: BrickLayout,
-                   max_vertices: float = 10,
-                   low=0.2,
+                   min_vertices: int = 10,
+                   max_vertices: int = 30,
+                   low=0.5,
                    high=0.7):
 
     x_min, x_max, y_min, y_max = get_graph_bound(graph)
     base_radius = min(x_max - x_min, y_max - y_min) / 2
-    radius_random = random.uniform(low, high)
     irregularity = 0
     spikeyness = 0
-    number_of_vertices = random.randint(3, max_vertices)
 
     tile = graph.tiles[node]
     cords = np.array(tile.tile_poly.exterior.coords)
@@ -77,15 +76,27 @@ def crop_2d_circle(node,
     node_y_min = np.min(cords[:, 1])
     node_y_max = np.max(cords[:, 1])
 
-    # generation of the random polygon
-    vertices = generatePolygon(
-        (node_x_min + node_x_max) / 2, (node_y_min + node_y_max) / 2,
-        base_radius * radius_random, irregularity, spikeyness,
-        number_of_vertices)
-    polygon = Polygon(vertices)
+    while True:
+        radius_random = random.uniform(low, high)
+        number_of_vertices = random.randint(min_vertices, max_vertices)
+        # generation of the random polygon
+        vertices = generatePolygon(
+            (node_x_min + node_x_max) / 2, (node_y_min + node_y_max) / 2,
+            base_radius * radius_random, irregularity, spikeyness,
+            number_of_vertices)
+        polygon = Polygon(vertices)
 
-    # or use get_all_placement_in_polygon()
-    tiles_super_set = torch.tensor([
-        i for i, t in enumerate(graph.tiles) if contain(polygon, t.tile_poly)
-    ])
+        # or use get_all_placement_in_polygon()
+        tiles_super_set = torch.tensor([
+            i for i, t in enumerate(graph.tiles)
+            if contain(polygon, t.tile_poly)
+        ])
+
+        if (tiles_super_set == node).any():
+            break
+
+        # with too few vertices, polygon may not contain original node
+        min_vertices += 1
+        max_vertices += 1
+
     return tiles_super_set

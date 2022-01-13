@@ -126,14 +126,18 @@ class SelectorTrainer():
             for data in batch:
                 log_items = [str(i), str(idx), "data {}".format(data.idx)]
 
-                (final_layout, prob_records,
-                 solutions) = solve_by_sample_selection(
-                     data,
-                     self.network,
-                     self.solver,
-                     sampler=self.sampler,
-                     sampled_graph=getattr(data, "sampled_graph", tuple()),
-                     show_intermediate=bool(plotter))
+                try:
+                    (final_layout, prob_records,
+                     solutions) = solve_by_sample_selection(
+                         data,
+                         self.network,
+                         self.solver,
+                         sampler=self.sampler,
+                         sampled_graph=getattr(data, "sampled_graph", tuple()),
+                         show_intermediate=bool(plotter))
+                except Exception as e:
+                    print("data {}, error {}".format(data.idx, e))
+                    raise e
 
                 # compute reward
                 num_holes = final_layout.detect_holes()
