@@ -100,7 +100,7 @@ def solve_by_sample_selection(
                                    low=0.5,
                                    high=0.7)
         assert sub_nodes is not None
-        print(len(sub_nodes))
+        print("size of queried subgraph", len(sub_nodes))
         sub_edges, sub_edge_features = subgraph(
             sub_nodes,
             current_full_edges,
