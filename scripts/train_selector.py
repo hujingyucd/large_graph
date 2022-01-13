@@ -94,6 +94,7 @@ if __name__ == "__main__":
     dataset_train = SampleGraphDataset(
         root=config["selector"]["training"]["data_path"],
         complete_graph=complete_graph,
+        sampler=RandomWalkSampler(rw_length=10, node_budget=300),
         device=device,
         split='train',
         subgraph_num=config["selector"]["training"]["dataset_size"]["train"])
@@ -124,7 +125,7 @@ if __name__ == "__main__":
             gnn.parameters(),
             eps=1e-4,
             lr=config["selector"]["training"]["optimizer"]["lr"]),
-        sampler=RandomWalkSampler(rw_length=10, node_budget=300),
+        sampler=None,
         solver=solver,
         writer=SummaryWriter(
             log_dir=config["selector"]["training"]["log_dir"]),

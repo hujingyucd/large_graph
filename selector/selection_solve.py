@@ -13,11 +13,13 @@ def solve_by_sample_selection(
         full_graph: BrickLayout,
         model: torch.nn.Module,
         solver: BaseSolver,
-        sampler: Sampler,
+        sampler: Sampler = None,
+        sampled_graph: Tuple[torch.Tensor, torch.Tensor] = tuple(),
         show_intermediate: bool = False
 ) -> Tuple[BrickLayout, torch.Tensor, List]:
     r"""
     full_graph: original full graph
+    if sampled_graph is not empty, it will be used instead of the sampler
     show_intermediate: if true, intermediate_results are returned,
         else an empty list is returned
 
@@ -51,14 +53,17 @@ def solve_by_sample_selection(
 
     full_graph.update_tiles()
 
-    try:
-        sampled_edges, sampled_node_mask = sampler(
-            full_graph.collide_edge_index)
-    except RuntimeError as e:
-        print("data: ", getattr(full_graph, "idx", "unknown"))
-        raise e
-    sampled_node_ids = torch.arange(
-        full_graph.node_feature.size(0))[sampled_node_mask]
+    if sampled_graph:
+        sampled_edges, sampled_node_ids = sampled_graph
+    else:
+        try:
+            sampled_edges, sampled_node_mask = sampler(
+                full_graph.collide_edge_index)
+        except RuntimeError as e:
+            print("data: ", getattr(full_graph, "idx", "unknown"))
+            raise e
+        sampled_node_ids = torch.arange(
+            full_graph.node_feature.size(0))[sampled_node_mask]
 
     current_full_graph = full_graph
     current_node_ids = sampled_node_ids
