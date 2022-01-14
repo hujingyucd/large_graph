@@ -65,6 +65,7 @@ def crop_2d_circle(node,
                    high=0.7):
 
     x_min, x_max, y_min, y_max = get_graph_bound(graph)
+    # base_radius can be very small for thin shapes
     base_radius = min(x_max - x_min, y_max - y_min) / 2
     irregularity = 0
     spikeyness = 0
@@ -82,7 +83,8 @@ def crop_2d_circle(node,
         # generation of the random polygon
         vertices = generatePolygon(
             (node_x_min + node_x_max) / 2, (node_y_min + node_y_max) / 2,
-            base_radius * radius_random, irregularity, spikeyness,
+            max(base_radius * radius_random, node_y_max - node_y_min,
+                node_x_max - node_x_min), irregularity, spikeyness,
             number_of_vertices)
         polygon = Polygon(vertices)
 
@@ -98,5 +100,10 @@ def crop_2d_circle(node,
         # with too few vertices, polygon may not contain original node
         min_vertices += 1
         max_vertices += 1
+        if min_vertices > 100:
+            print(locals())
+            from interfaces.qt_plot import Plotter
+            graph.show_candidate_tiles(Plotter(), "./temp.png")
+            raise AssertionError
 
     return tiles_super_set

@@ -6,9 +6,13 @@ ESP = 1e-5
 
 
 class Tile:
+
     def __init__(self, tile_poly: Polygon, id: int):
         self.tile_poly = tile_poly
         self.id = id
+
+    def __repr__(self):
+        "tile with id: {}".format(self.id)
 
     def __eq__(self, other):
         if abs(self.tile_poly.area - other.tile_poly.area) > ESP:
