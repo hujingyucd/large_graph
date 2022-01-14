@@ -89,18 +89,20 @@ if __name__ == "__main__":
 
     from selector.trainer import SelectorTrainer
     from selector.datasets import SampleGraphDataset
-    from sampler.random_walk_sampler import RandomWalkSampler
+    # from sampler.random_walk_sampler import RandomWalkSampler
+    from sampler.poisson_sampler import PoissonSampler
 
     dataset_train = SampleGraphDataset(
         root=config["selector"]["training"]["data_path"],
         complete_graph=complete_graph,
-        sampler=RandomWalkSampler(rw_length=10, node_budget=300),
+        sampler=PoissonSampler(),
         device=device,
         split='train',
         subgraph_num=config["selector"]["training"]["dataset_size"]["train"])
     dataset_test = SampleGraphDataset(
         root=config["selector"]["training"]["data_path"],
         complete_graph=complete_graph,
+        sampler=PoissonSampler(),
         device=device,
         split='test',
         subgraph_num=config["selector"]["training"]["dataset_size"]["train"])

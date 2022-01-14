@@ -8,6 +8,7 @@ from utils.data_util import load_bricklayout
 from tiling.brick_layout import BrickLayout
 from tiling.tile_graph import TileGraph
 from sampler.base_sampler import Sampler
+from sampler.poisson_sampler import PoissonSampler
 
 
 class SampleGraphDataset(Dataset):
@@ -93,13 +94,19 @@ class SampleGraphDataset(Dataset):
 
                 if self.sampler:
                     try:
-                        sampled_edges, sampled_node_mask = self.sampler(
-                            data.collide_edge_index)
+                        if isinstance(self.sampler, PoissonSampler):
+                            sampled_edges, sampled_node_mask = self.sampler(
+                                data)
+                        else:
+                            sampled_edges, sampled_node_mask = self.sampler(
+                                data.collide_edge_index)
                     except RuntimeError as e:
                         print(str(e), raw_path)
                         raise e
                     sampled_node_ids = torch.arange(
                         data.node_feature.size(0))[sampled_node_mask]
+                    self.logger.debug("sampled nodes {}, edges {}".format(
+                        sampled_node_ids.size(0), sampled_edges.size(1)))
                     torch.save(
                         {
                             "node_ids": sampled_node_ids,
