@@ -148,7 +148,7 @@ class BrickLayout():
              super_contour_poly, show_line=True)
         if None not in (plotter, file_name):
             plotter.draw_contours(exteriors_contour_list + interiors_list,
-                              file_name)
+                                  file_name)
         return super_contour_poly
 
     def show_adjacency_graph(self,

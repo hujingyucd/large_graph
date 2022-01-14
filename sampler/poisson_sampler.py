@@ -1,18 +1,17 @@
 from typing import Tuple
 import torch
 import numpy as np
+from shapely.geometry import Point
 from sampler.base_sampler import Sampler
 from torch_geometric.utils import subgraph
-from interfaces.qt_plot import Plotter
 from tiling.brick_layout import BrickLayout
-from shapely.geometry import Point, Polygon
-import matplotlib.pyplot as plt
 import random
 
 # plotter = Plotter()
 
-def get_graph_bound(graph : BrickLayout):
-    tiles = [ np.array(t.tile_poly.exterior.coords) for t in graph.tiles]
+
+def get_graph_bound(graph: BrickLayout):
+    tiles = [np.array(t.tile_poly.exterior.coords) for t in graph.tiles]
 
     # getting the bound
     x_min = np.min([np.min(tile[:, 0]) for tile in tiles])
@@ -21,8 +20,10 @@ def get_graph_bound(graph : BrickLayout):
     y_max = np.max([np.max(tile[:, 1]) for tile in tiles])
     return x_min, x_max, y_min, y_max
 
+
 class PoissonSampler(Sampler):
-    def __init__(self, radius: float = (2 ** 0.5) / 2):
+
+    def __init__(self, radius: float = (2**0.5) / 2):
         super(PoissonSampler, self).__init__()
         self.graph = None
         self.poly = None
@@ -39,31 +40,34 @@ class PoissonSampler(Sampler):
 
         # sample radius & grid width
         self.radius = radius
-        self.edge = self.radius / (2 ** 0.5)
+        self.edge = self.radius / (2**0.5)
 
         # sample results
         self.cells = None
         self.samples = []
-    
+
     def centroid(self, vertexes):
-        x_list = [vertex [0] for vertex in vertexes]
-        y_list = [vertex [1] for vertex in vertexes]
+        x_list = [vertex[0] for vertex in vertexes]
+        y_list = [vertex[1] for vertex in vertexes]
         x = sum(x_list) / len(vertexes)
         y = sum(y_list) / len(vertexes)
-        return(x, y)
+        return (x, y)
 
     def cal_distance(self, sample, locs):
         x, y = self.centroid(locs)
-        d = ((sample[0]-x)**2 + (sample[1]-y)**2) ** 0.5
+        d = ((sample[0] - x)**2 + (sample[1] - y)**2)**0.5
         return d
-        
+
     def get_neighbors(self, coords):
-        options = [(0,0), (-1,-2),(0,-2),(1,-2),(-2,-1),(-1,-1),(0,-1),(1,-1),(2,-1),
-                   (-2,0),(-1,0),(1,0),(2,0),(-2,1),(-1,1),(0,1),(1,1),(2,1),(-1,2),(0,2),(1,2)]
+        options = [(0, 0), (-1, -2), (0, -2), (1, -2), (-2, -1), (-1, -1),
+                   (0, -1), (1, -1), (2, -1), (-2, 0), (-1, 0), (1, 0), (2, 0),
+                   (-2, 1), (-1, 1), (0, 1), (1, 1), (2, 1), (-1, 2), (0, 2),
+                   (1, 2)]
         neighbors = []
         for delta_x, delta_y in options:
             neig_coords = coords[0] + delta_x, coords[1] + delta_y
-            if neig_coords[0] < 0 or neig_coords[0] >= self.rows or neig_coords[1] < 0 or neig_coords[1] >= self.cols:
+            if (neig_coords[0] < 0 or neig_coords[0] >= self.rows
+                    or neig_coords[1] < 0 or neig_coords[1] >= self.cols):
                 continue
             neig_cell = self.cells[neig_coords]
             if neig_cell != -1:
@@ -72,14 +76,14 @@ class PoissonSampler(Sampler):
 
     def check_valid(self, pt):
         pt_obj = Point(pt[0], pt[1])
-        
+
         if not pt_obj.within(self.poly):
             return False
 
         coords = self.get_cell_coords(pt)
         for index in self.get_neighbors(coords):
             target_pt = self.samples[index]
-            distance = (target_pt[0]-pt[0])**2 + (target_pt[1]-pt[1])**2
+            distance = (target_pt[0] - pt[0])**2 + (target_pt[1] - pt[1])**2
             if distance < self.radius**2:
                 return False
         return True
@@ -109,7 +113,8 @@ class PoissonSampler(Sampler):
         graph: original full graph
         return:
             new_edges
-            final_nodes: x (x<N) length tensor indicating sampled node ids, tensor([node1, node2, ...])
+            final_nodes: x (x<N) length tensor
+            indicating sampled node ids, tensor([node1, node2, ...])
         """
         self.graph = graph
         self.poly = graph.show_super_contour(None, None)
@@ -118,17 +123,20 @@ class PoissonSampler(Sampler):
         self.width = self.x_max - self.x_min
         self.height = self.y_max - self.y_min
 
-        self.edge = self.radius / (2 ** 0.5)
+        self.edge = self.radius / (2**0.5)
         self.rows = int(self.width / self.edge) + 1
         self.cols = int(self.height / self.edge) + 1
 
-        coords_list = [(ix, iy) for ix in range(self.rows) for iy in range(self.cols)]
+        coords_list = [(ix, iy) for ix in range(self.rows)
+                       for iy in range(self.cols)]
         self.cells = {coords: -1 for coords in coords_list}
 
-        first_pt = (random.uniform(self.x_min, self.x_max), random.uniform(self.y_min, self.y_max))
+        first_pt = (random.uniform(self.x_min, self.x_max),
+                    random.uniform(self.y_min, self.y_max))
         pt_obj = Point(first_pt[0], first_pt[1])
         while not pt_obj.within(self.poly):
-            first_pt = (random.uniform(self.x_min, self.x_max), random.uniform(self.y_min, self.y_max))
+            first_pt = (random.uniform(self.x_min, self.x_max),
+                        random.uniform(self.y_min, self.y_max))
             pt_obj = Point(first_pt[0], first_pt[1])
 
         self.samples.append(first_pt)
@@ -143,8 +151,9 @@ class PoissonSampler(Sampler):
 
             if new_pt:
                 self.samples.append(new_pt)
-                active_list.append(len(self.samples)-1)
-                self.cells[self.get_cell_coords(new_pt)] = len(self.samples) - 1
+                active_list.append(len(self.samples) - 1)
+                self.cells[self.get_cell_coords(new_pt)] = len(
+                    self.samples) - 1
             else:
                 active_list.remove(idx)
         # print(f'{len(self.samples)} points sampled.')
@@ -154,7 +163,8 @@ class PoissonSampler(Sampler):
         for i in range(len(self.samples)):
             point = self.samples[i]
             point_obj = Point(point[0], point[1])
-            d_min = ((self.x_max - self.x_min) ** 2 + (self.y_max - self.y_min) ** 2) ** 0.5
+            d_min = ((self.x_max - self.x_min)**2 +
+                     (self.y_max - self.y_min)**2)**0.5
             tile_min = None
             for j in range(len(graph.tiles)):
                 t = graph.tiles[j]
@@ -168,9 +178,11 @@ class PoissonSampler(Sampler):
                     tile_min = j
             nodes.append(tile_min)
 
-        final_nodes = torch.unique(torch.tensor(nodes, dtype=torch.long), sorted = True)
+        final_nodes = torch.unique(torch.tensor(nodes, dtype=torch.long),
+                                   sorted=True)
         # assert len(self.samples) == len(nodes)
-        new_edges, _ = subgraph(final_nodes, graph.collide_edge_index, relabel_nodes=True)
+        new_edges, _ = subgraph(final_nodes,
+                                graph.collide_edge_index,
+                                relabel_nodes=True)
 
         return new_edges, final_nodes
- 
