@@ -105,6 +105,12 @@ class PoissonSampler(Sampler):
         return row_idx, col_idx
 
     def sample(self, graph: BrickLayout) -> Tuple[torch.Tensor, torch.Tensor]:
+        """
+        graph: original full graph
+        return:
+            new_edges
+            final_nodes: x (x<N) length tensor indicating sampled node ids, tensor([node1, node2, ...])
+        """
         self.graph = graph
         self.poly = graph.show_super_contour(None, None)
 
@@ -147,19 +153,19 @@ class PoissonSampler(Sampler):
         nodes = []
         for i in range(len(self.samples)):
             point = self.samples[i]
-            d_min = None 
+            point_obj = Point(point[0], point[1])
+            d_min = ((self.x_max - self.x_min) ** 2 + (self.y_max - self.y_min) ** 2) ** 0.5
             tile_min = None
             for j in range(len(graph.tiles)):
                 t = graph.tiles[j]
+                if not point_obj.within(t.tile_poly):
+                    continue
+
                 locs = list(t.tile_poly.exterior.coords)
-                if j == 0:
-                    d_min = self.cal_distance(point, locs[:-1])
+                d = self.cal_distance(point, locs[:-1])
+                if d < d_min:
+                    d_min = d
                     tile_min = j
-                else:
-                    d = self.cal_distance(point, locs[:-1])
-                    if d < d_min:
-                        d_min = d
-                        tile_min = j
             nodes.append(tile_min)
 
         final_nodes = torch.unique(torch.tensor(nodes, dtype=torch.long), sorted = True)
