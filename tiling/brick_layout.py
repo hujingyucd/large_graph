@@ -56,7 +56,7 @@ class BrickLayout():
             self.inverse_index = {}
             for k, v in self.re_index.items():
                 self.inverse_index[v] = k
-        elif inverse_index:
+        else:
             self.inverse_index = inverse_index
             self.re_index = {v: k for k, v in inverse_index.items()}
 
