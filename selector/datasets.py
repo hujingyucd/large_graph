@@ -1,5 +1,6 @@
 import logging
 import torch
+import traceback
 from torch_geometric.data import Dataset
 # import numpy as np
 import os
@@ -73,7 +74,7 @@ class SampleGraphDataset(Dataset):
 
             try:
                 data = BrickLayout(
-                    complete_graph=None,
+                    complete_graph=self.complete_graph,
                     node_feature=layout.node_feature[:, -1:],
                     collide_edge_index=layout.collide_edge_index,
                     collide_edge_features=layout.collide_edge_features,
@@ -95,14 +96,15 @@ class SampleGraphDataset(Dataset):
                 if self.sampler:
                     try:
                         if isinstance(self.sampler, PoissonSampler):
-                            sampled_edges, sampled_node_mask = self.sampler(
-                                data)
+                            (sampled_edges,
+                             sampled_node_mask) = self.sampler.sample(data)
                         else:
                             sampled_edges, sampled_node_mask = self.sampler(
                                 data.collide_edge_index)
-                    except RuntimeError as e:
+                    except Exception as e:
                         print(str(e), raw_path)
-                        raise e
+                        traceback.print_exc()
+                        exit()
                     sampled_node_ids = torch.arange(
                         data.node_feature.size(0))[sampled_node_mask]
                     self.logger.debug("sampled nodes {}, edges {}".format(
@@ -116,6 +118,7 @@ class SampleGraphDataset(Dataset):
                             os.path.join(self.processed_dir, raw_path))[0] +
                         "_sampled.pt")
 
+                data.complete_graph = None
                 write_bricklayout(*(os.path.split(target_path)), data)
             except Exception as e:
                 self.logger.error("{} {}".format(str(e), raw_path))
