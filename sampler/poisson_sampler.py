@@ -7,8 +7,6 @@ from torch_geometric.utils import subgraph
 from tiling.brick_layout import BrickLayout
 import random
 
-# plotter = Plotter()
-
 
 def get_graph_bound(graph: BrickLayout):
     tiles = [np.array(t.tile_poly.exterior.coords) for t in graph.tiles]
@@ -113,10 +111,9 @@ class PoissonSampler(Sampler):
         graph: original full graph
         return:
             new_edges
-            final_nodes: x (x<N) length tensor
-            indicating sampled node ids, tensor([node1, node2, ...])
+            node_mask
         """
-        self.graph = graph
+        graph.update_tiles()
         self.poly = graph.show_super_contour(None, None)
 
         self.x_min, self.x_max, self.y_min, self.y_max = get_graph_bound(graph)
@@ -176,7 +173,8 @@ class PoissonSampler(Sampler):
                 if d < d_min:
                     d_min = d
                     tile_min = j
-            nodes.append(tile_min)
+            if tile_min is not None:
+                nodes.append(tile_min)
 
         final_nodes = torch.unique(torch.tensor(nodes, dtype=torch.long),
                                    sorted=True)
@@ -185,4 +183,6 @@ class PoissonSampler(Sampler):
                                 graph.collide_edge_index,
                                 relabel_nodes=True)
 
-        return new_edges, final_nodes
+        node_mask = torch.zeros(graph.node_feature.size(0), dtype=torch.bool)
+        node_mask[final_nodes] = True
+        return new_edges, node_mask
