@@ -181,6 +181,7 @@ class PoissonSampler(Sampler):
         # assert len(self.samples) == len(nodes)
         new_edges, _ = subgraph(final_nodes,
                                 graph.collide_edge_index,
+                                num_nodes=graph.node_feature.size(0),
                                 relabel_nodes=True)
 
         node_mask = torch.zeros(graph.node_feature.size(0), dtype=torch.bool)
