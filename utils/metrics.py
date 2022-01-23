@@ -9,7 +9,12 @@ def coverage_score(predict: Union[torch.Tensor, np.ndarray],
                    brick_layout: BrickLayout,
                    device: torch.device,
                    EPS: float = 1e-7):
-    predict = torch.from_numpy(np.array(predict)).float().to(device)
+    if isinstance(predict, np.ndarray):
+        predict = torch.from_numpy(np.array(predict)).float().to(device)
+    elif isinstance(predict, torch.Tensor):
+        predict = predict.float().to(device)
+    else:
+        raise TypeError()
     x, _, _, _, _ = brick_layout.get_data_as_torch_tensor(device)
 
     # calculate total area

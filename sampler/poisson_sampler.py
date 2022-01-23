@@ -21,7 +21,7 @@ def get_graph_bound(graph: BrickLayout):
 
 class PoissonSampler(Sampler):
 
-    def __init__(self, radius: float = 2.1):
+    def __init__(self, radius: float = 1.2):
         super(PoissonSampler, self).__init__()
         # sample radius
         self.radius = radius

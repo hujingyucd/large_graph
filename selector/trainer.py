@@ -9,7 +9,8 @@ from selector.selection_solve import solve_by_sample_selection
 from solver.MIS.base_solver import BaseSolver
 from interfaces.qt_plot import Plotter
 from sampler.base_sampler import Sampler
-# from tiling.brick_layout import BrickLayout
+from tiling.brick_layout import BrickLayout
+from utils.metrics import coverage_score
 # from utils.graph_utils import count_components
 
 
@@ -138,12 +139,19 @@ class SelectorTrainer():
                 except Exception as e:
                     print("data {}, error {}".format(data.idx, e))
                     raise e
+                final_layout: BrickLayout
 
                 # compute reward
                 num_holes = final_layout.detect_holes()
                 log_items.append("holes: {}".format(num_holes))
                 train_metrics["holes"].append(num_holes)
-                reward = -1 - num_holes
+                # reward = -1 - num_holes
+                area_coverage = coverage_score(final_layout.predict,
+                                               final_layout,
+                                               final_layout.device)
+                log_items.append("coverage: {}".format(area_coverage))
+                reward = area_coverage
+
                 batch_rewards.append(reward)
 
                 batch_probs.append(prob_records.log().sum().unsqueeze(0))
