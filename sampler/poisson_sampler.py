@@ -21,28 +21,10 @@ def get_graph_bound(graph: BrickLayout):
 
 class PoissonSampler(Sampler):
 
-    def __init__(self, radius: float = (2**0.5) / 2):
+    def __init__(self, radius: float = 2.1):
         super(PoissonSampler, self).__init__()
-        self.graph = None
-        self.poly = None
-        # graph bounds
-        self.x_min = None
-        self.x_max = None
-        self.y_min = None
-        self.y_max = None
-
-        self.width = None
-        self.height = None
-        self.rows = None
-        self.cols = None
-
-        # sample radius & grid width
+        # sample radius
         self.radius = radius
-        self.edge = self.radius / (2**0.5)
-
-        # sample results
-        self.cells = None
-        self.samples = []
 
     def centroid(self, vertexes):
         x_list = [vertex[0] for vertex in vertexes]
@@ -114,6 +96,7 @@ class PoissonSampler(Sampler):
             node_mask
         """
         graph.update_tiles()
+        self.samples = []
         self.poly = graph.show_super_contour(None, None)
 
         self.x_min, self.x_max, self.y_min, self.y_max = get_graph_bound(graph)
