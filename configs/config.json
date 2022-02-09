@@ -53,7 +53,7 @@
         "solve_method": "onetime"
     },
     "tiling": {
-        "complete_graph_path": "./data/complete_graph_ring10.pkl",
+        "complete_graph_path": "./data/complete_graph_ring13.pkl",
         "cropped_layouts_dir": "/research/dept8/fyp21/cwf2101/shared/contours/L3+long_tile_ring10",
         "tile_count": 2,
         "silhouette_list": "/research/dept8/fyp21/cwf2101/rchuan/working/large_graph/configs/silhouette_list.txt"
