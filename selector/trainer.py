@@ -147,8 +147,7 @@ class SelectorTrainer():
                 train_metrics["holes"].append(num_holes)
                 # reward = -1 - num_holes
                 area_coverage = coverage_score(final_layout.predict,
-                                               final_layout,
-                                               final_layout.device)
+                                               final_layout, self.device)
                 log_items.append("coverage: {}".format(area_coverage))
                 reward = area_coverage
 
