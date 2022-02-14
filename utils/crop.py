@@ -1,6 +1,5 @@
 import torch
 import numpy as np
-import random
 from tiling.brick_layout import BrickLayout
 from shapely.geometry import Polygon
 from tiling.tile_factory import generatePolygon
@@ -59,14 +58,12 @@ def get_graph_bound(graph: BrickLayout):
 
 def crop_2d_circle(node,
                    graph: BrickLayout,
-                   min_vertices: int = 10,
-                   max_vertices: int = 30,
-                   low=0.5,
-                   high=0.7):
+                   radius: float = 4.2,
+                   number_of_vertices: int = 30):
 
-    x_min, x_max, y_min, y_max = get_graph_bound(graph)
+    # x_min, x_max, y_min, y_max = get_graph_bound(graph)
     # base_radius can be very small for thin shapes
-    base_radius = min(x_max - x_min, y_max - y_min) / 2
+    # base_radius = min(x_max - x_min, y_max - y_min) / 2
     irregularity = 0
     spikeyness = 0
 
@@ -78,14 +75,15 @@ def crop_2d_circle(node,
     node_y_max = np.max(cords[:, 1])
 
     while True:
-        radius_random = random.uniform(low, high)
-        number_of_vertices = random.randint(min_vertices, max_vertices)
         # generation of the random polygon
+        # vertices = generatePolygon(
+        #     (node_x_min + node_x_max) / 2, (node_y_min + node_y_max) / 2,
+        #     max(base_radius * radius_random, node_y_max - node_y_min,
+        #         node_x_max - node_x_min), irregularity, spikeyness,
+        #     number_of_vertices)
         vertices = generatePolygon(
             (node_x_min + node_x_max) / 2, (node_y_min + node_y_max) / 2,
-            max(base_radius * radius_random, node_y_max - node_y_min,
-                node_x_max - node_x_min), irregularity, spikeyness,
-            number_of_vertices)
+            radius, irregularity, spikeyness, number_of_vertices)
         polygon = Polygon(vertices)
 
         # or use get_all_placement_in_polygon()
@@ -96,14 +94,5 @@ def crop_2d_circle(node,
 
         if (tiles_super_set == node).any():
             break
-
-        # with too few vertices, polygon may not contain original node
-        min_vertices += 1
-        max_vertices += 1
-        if min_vertices > 100:
-            print(locals())
-            from interfaces.qt_plot import Plotter
-            graph.show_candidate_tiles(Plotter(), "./temp.png")
-            raise AssertionError
 
     return tiles_super_set

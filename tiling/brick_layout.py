@@ -454,8 +454,7 @@ class BrickLayout():
 
     def update_tiles(self):
         tiles = self.complete_graph.tiles
-        selected_indices = [k for k in self.re_index.keys()]
-        selected_tiles = [tiles[s] for s in selected_indices]
+        selected_tiles = [tiles[s] for s in self.re_index.keys()]
         self.tiles = selected_tiles
 
     @staticmethod

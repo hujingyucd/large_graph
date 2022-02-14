@@ -98,10 +98,7 @@ def solve_by_sample_selection(
         #     current_full_edges,
         #     relabel_nodes=True,
         #     num_nodes=current_full_graph.node_feature.size(0))
-        sub_nodes = crop_2d_circle(original_node_id.item(),
-                                   current_full_graph,
-                                   low=0.5,
-                                   high=0.7)
+        sub_nodes = crop_2d_circle(original_node_id.item(), current_full_graph)
         print("size of queried subgraph", len(sub_nodes))
 
         sub_edges, sub_edge_features = subgraph(
