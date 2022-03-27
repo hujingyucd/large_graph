@@ -3,8 +3,8 @@ import torch
 import numpy as np
 from shapely.geometry import Point
 from sampler.base_sampler import Sampler
-from torch_geometric.utils import subgraph
 from tiling.brick_layout import BrickLayout
+from utils.crop import crop_2d_circle
 import random
 
 
@@ -21,28 +21,10 @@ def get_graph_bound(graph: BrickLayout):
 
 class PoissonSampler(Sampler):
 
-    def __init__(self, radius: float = (2**0.5) / 2):
+    def __init__(self, radius: float = 3):
         super(PoissonSampler, self).__init__()
-        self.graph = None
-        self.poly = None
-        # graph bounds
-        self.x_min = None
-        self.x_max = None
-        self.y_min = None
-        self.y_max = None
-
-        self.width = None
-        self.height = None
-        self.rows = None
-        self.cols = None
-
-        # sample radius & grid width
+        # sample radius
         self.radius = radius
-        self.edge = self.radius / (2**0.5)
-
-        # sample results
-        self.cells = None
-        self.samples = []
 
     def centroid(self, vertexes):
         x_list = [vertex[0] for vertex in vertexes]
@@ -106,6 +88,18 @@ class PoissonSampler(Sampler):
         col_idx = int((pt[1] - self.y_min) // self.edge)
         return row_idx, col_idx
 
+    def add_crop_edges(self, graph: BrickLayout, nodes: torch.Tensor):
+        graph.update_tiles()
+        crop_edges = ([], [])
+        for i, n in enumerate(nodes):
+            sub_nodes = crop_2d_circle(i, graph)
+            # print(len(sub_nodes))
+            for sn in sub_nodes:
+                if sn.item() != i:
+                    crop_edges[0].append(i)
+                    crop_edges[1].append(sn)
+        return crop_edges
+
     def sample(self, graph: BrickLayout) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         graph: original full graph
@@ -114,6 +108,7 @@ class PoissonSampler(Sampler):
             node_mask
         """
         graph.update_tiles()
+        self.samples = []
         self.poly = graph.show_super_contour(None, None)
 
         self.x_min, self.x_max, self.y_min, self.y_max = get_graph_bound(graph)
@@ -179,11 +174,27 @@ class PoissonSampler(Sampler):
         final_nodes = torch.unique(torch.tensor(nodes, dtype=torch.long),
                                    sorted=True)
         # assert len(self.samples) == len(nodes)
-        new_edges, _ = subgraph(final_nodes,
-                                graph.collide_edge_index,
-                                num_nodes=graph.node_feature.size(0),
-                                relabel_nodes=True)
+        # ori_edges, _ = subgraph(final_nodes,
+        #                         graph.collide_edge_index,
+        #                         num_nodes=graph.node_feature.size(0),
+        #                         relabel_nodes=True)
+        # due to large radius, ori_edges should be very few, if any,
+        # thus we ignore them here
 
+        sampled_graph = BrickLayout(complete_graph=graph.complete_graph,
+                                    node_feature=torch.tensor([]),
+                                    collide_edge_index=torch.tensor([[], []]),
+                                    collide_edge_features=torch.tensor([]),
+                                    align_edge_index=torch.tensor([[], []]),
+                                    align_edge_features=torch.tensor([]),
+                                    re_index={
+                                        graph.inverse_index[k.item()]: i
+                                        for i, k in enumerate(final_nodes)
+                                    })
+
+        new_edge_tensor = torch.tensor(self.add_crop_edges(
+            sampled_graph, final_nodes),
+                                       dtype=torch.long)
         node_mask = torch.zeros(graph.node_feature.size(0), dtype=torch.bool)
         node_mask[final_nodes] = True
-        return new_edges, node_mask
+        return new_edge_tensor, node_mask
